@@ -35,20 +35,67 @@ type Infos_local struct {
 	porta      string
 }
 
-func define_info() {
-	var qual_serv string
+func define_info() Infos_local{
+	var qual_serv, tipo_serv string
+    fmt.Printf("Tipo de servidor (local [LOC] ou laboratório [LAB]): ")
+    fmt.Scan(&tipo_serv)
+    tipo_serv = strings.ToUpper(tipo_serv)
 	fmt.Printf("Servidor (A, B ou C): ")
     fmt.Scan(&qual_serv)
+    qual_serv = strings.ToUpper(qual_serv)
     for{
-        switch strings.ToUpper(qual_serv) {
-        case "A":
-        case "B":
-        case "C":
-        default:
-            fmt.Println("Servidor inválido. Digite novamente.")
+        if tipo_serv == "LOC"{
+            if qual_serv == "A"{
+                servidores := []string{serv_loc_B, serv_loc_C}
+                serv_local := Infos_local{servidores, "8080"}
+                return serv_local
+            } else if qual_serv == "B" {
+                servidores := []string{serv_loc_A, serv_loc_C}
+                serv_local := Infos_local{servidores, "8081"}
+                return serv_local
+            } else if qual_serv == "C" {
+                servidores := []string{serv_loc_A, serv_loc_B}
+                serv_local := Infos_local{servidores, "8082"}
+                return serv_local
+            } else {
+                fmt.Printf("Servidor inválido.")
+                fmt.Printf("Tipo de servidor (local [LOC] ou laboratório [LAB]): ")
+                fmt.Scan(&tipo_serv)
+                tipo_serv = strings.ToUpper(tipo_serv)
+                fmt.Printf("Servidor (A, B ou C): ")
+                fmt.Scan(&qual_serv)
+                qual_serv = strings.ToUpper(qual_serv)
+            }
+        } else if tipo_serv == "LAB"{
+            if qual_serv == "A"{
+                servidores := []string{serv_lab_B, serv_lab_C}
+                serv_local := Infos_local{servidores, "8080"}
+                return serv_local
+            } else if qual_serv == "B"{
+                servidores := []string{serv_lab_A, serv_lab_C}
+                serv_local := Infos_local{servidores, "8080"}
+                return serv_local
+            } else if qual_serv == "C"{
+                servidores := []string{serv_lab_A, serv_lab_B}
+                serv_local := Infos_local{servidores, "8080"}
+                return serv_local
+            } else {
+                fmt.Printf("Servidor inválido.")
+                fmt.Printf("Tipo de servidor (local [LOC] ou laboratório [LAB]): ")
+                fmt.Scan(&tipo_serv)
+                tipo_serv = strings.ToUpper(tipo_serv)
+                fmt.Printf("Servidor (A, B ou C): ")
+                fmt.Scan(&qual_serv)
+                qual_serv = strings.ToUpper(qual_serv)
+            }
+        } else {
+            fmt.Printf("Tipo de servidor inválido.")
+            fmt.Printf("Tipo de servidor (local [LOC] ou laboratório [LAB]): ")
+            fmt.Scan(&tipo_serv)
+            tipo_serv = strings.ToUpper(tipo_serv)
             fmt.Printf("Servidor (A, B ou C): ")
             fmt.Scan(&qual_serv)
-            continue
+            qual_serv = strings.ToUpper(qual_serv)
         }
     }
 }
