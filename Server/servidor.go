@@ -23,11 +23,14 @@ type Cliente struct {
 }
 
 type Evento struct {
-    id int
-    ativo bool
-    id_criador int
-    nome string
-    descricao string
+    id              int
+    ativo           bool
+    id_criador      int
+    nome            string
+    descricao       string
+    participantes 	map[int]float64
+    palpite         map[int]string
+    resultado       string
 }
 
 type Infos_local struct {
@@ -133,6 +136,43 @@ func define_servidor(serv_local *Infos_local, id_cont *int) *gin.Engine{
 
 	return r
 }
+
+// tratameto de dados
+func calcularPremio() {
+    premiacao := 0.0 //Variável para armazenar o valor total das apostas
+    total_ganhadores := 0.0 //Variável para armazenar o total apostado pelos ganhadores
+    participantes := map[int]float64{ //Simulacao Mapa que associa o ID dos participantes aos seus respectivos valores de aposta
+        01: 30,
+        02: 25,
+        03: 40,
+    }
+    palpite := map[int]string{ // Simulacao Mapa que associa o ID dos participantes aos seus palpites
+        01: "A",
+        02: "B",
+        03: "A",
+    }
+
+    resultado := "A" // Simulacao String representando o resultado correto do palpite
+    ganhadores := make(map[int]float64) // Mapa para armazenar os ganhadores e seus valores de aposta
+
+    // calcula o valor total 
+    for _, valor := range participantes{
+        premiacao += valor
+    }
+    for ip, palpt := range palpite{
+        if palpt == resultado{
+            ganhadores[ip] = participantes[ip]
+        }
+    }
+    //pagamento 
+    for id, valor := range ganhadores{
+        total_ganhadores += valor
+        ganho := (participantes[id] / total_ganhadores) * premiacao
+        //atribuir ganho ao saldo do Cliente
+        fmt.Println(ganho) //para nn reclamar
+    }
+}
+
 
 func main() {
 
