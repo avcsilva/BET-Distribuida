@@ -69,7 +69,7 @@ func existe_token(serv_local *Infos_local) {
         // Verifica se a variável token se torna verdadeira dentro de um tempo limite
         // Ou seja, verifica se há um token circulando pelo sistema em um período de 3 segundos
         for i := 0; i < 3; i++ {
-            if token == true { // Se houver token, o servidor atual não precisa gerar um novo
+            if token { // Se houver token, o servidor atual não precisa gerar um novo
                 continue
             }
             // Conta 1 segundo
@@ -250,9 +250,10 @@ func define_metodo_get(serv_local *Infos_local, serv *gin.Engine){}
 
 // Função para definir os métodos POST do servidor
 func define_metodo_post(serv_local *Infos_local, serv *gin.Engine){
+    // Método POST para recebimento do token
     serv.POST("/token", func(c *gin.Context){
-        token = true
-        c.JSON(http.StatusOK, gin.H{"message": "Token recebido com sucesso."})
+        token = true // O servidor recebe o token
+        c.JSON(http.StatusOK, gin.H{"message": "Token recebido com sucesso."}) // Retorna mensagem de sucesso
     })
 }
 
