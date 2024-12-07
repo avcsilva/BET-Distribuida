@@ -185,7 +185,7 @@ func define_info() Infos_local{
                 }
                 return serv_local
             } else {
-                fmt.Printf("Servidor inválido.")
+                fmt.Println("Servidor inválido.")
                 fmt.Printf("Tipo de servidor (local [LOC] ou laboratório [LAB]): ")
                 fmt.Scan(&tipo_serv)
                 tipo_serv = strings.ToUpper(tipo_serv)
@@ -225,7 +225,7 @@ func define_info() Infos_local{
             }
                 return serv_local
             } else {
-                fmt.Printf("Servidor inválido.")
+                fmt.Println("Servidor inválido.")
                 fmt.Printf("Tipo de servidor (local [LOC] ou laboratório [LAB]): ")
                 fmt.Scan(&tipo_serv)
                 tipo_serv = strings.ToUpper(tipo_serv)
@@ -234,7 +234,7 @@ func define_info() Infos_local{
                 qual_serv = strings.ToUpper(qual_serv)
             }
         } else {
-            fmt.Printf("Tipo de servidor inválido.")
+            fmt.Println("Tipo de servidor inválido.")
             fmt.Printf("Tipo de servidor (local [LOC] ou laboratório [LAB]): ")
             fmt.Scan(&tipo_serv)
             tipo_serv = strings.ToUpper(tipo_serv)
@@ -250,7 +250,10 @@ func define_metodo_get(serv_local *Infos_local, serv *gin.Engine){}
 
 // Função para definir os métodos POST do servidor
 func define_metodo_post(serv_local *Infos_local, serv *gin.Engine){
-    serv.POST("/token", func(c *gin.Context){})
+    serv.POST("/token", func(c *gin.Context){
+        token = true
+        c.JSON(http.StatusOK, gin.H{"message": "Token recebido com sucesso."})
+    })
 }
 
 // Função para definir os métodos PATCH do servidor
