@@ -551,39 +551,44 @@ func define_servidor(serv_local *Infos_local) *gin.Engine{
 	return r
 }
 
-// tratameto de dados
-func calcularPremio() {
-    premiacao := 0.0 //Variável para armazenar o valor total das apostas
-    total_ganhadores := 0.0 //Variável para armazenar o total apostado pelos ganhadores
-    participantes := map[int]float64{ //Simulacao Mapa que associa o ID dos participantes aos seus respectivos valores de aposta
-        01: 30,
-        02: 25,
-        03: 40,
-    }
-    palpite := map[int]string{ // Simulacao Mapa que associa o ID dos participantes aos seus palpites
-        01: "A",
-        02: "B",
-        03: "A",
+
+func alterarSaldo(id int, novoSaldo float64, il *Infos_local) bool {
+    // Verificar se o cliente existe no mapa
+    cliente, encontrado := il.clientes[id]
+    if !encontrado {
+        return false // Retorna falso se o cliente não for encontrado
     }
 
-    resultado := "A" // Simulacao String representando o resultado correto do palpite
+    // Atualizar o saldo do cliente diretamente no mapa
+    cliente.saldo += novoSaldo
+    il.clientes[id] = cliente // Reatribuir o cliente ao mapa
+    return true
+}
+
+// tratameto de dados
+func calcularPremio(e Evento, serv_local *Infos_local) {
+    premiacao := 0.0 //Variável para armazenar o valor total das apostas
+    total_ganhadores := 0.0 //Variável para armazenar o total apostado pelos ganhadores
     ganhadores := make(map[int]float64) // Mapa para armazenar os ganhadores e seus valores de aposta
 
     // calcula o valor total 
-    for _, valor := range participantes{
+    for _, valor := range e.participantes{
         premiacao += valor
     }
-    for ip, palpt := range palpite{
-        if palpt == resultado{
-            ganhadores[ip] = participantes[ip]
+    for ip, palpt := range e.palpite{
+        if palpt == e.resultado{
+            ganhadores[ip] = e.participantes[ip]
         }
     }
-    //pagamento 
-    for id, valor := range ganhadores{
+    // Calcula o total apostado pelos ganhadores
+    for _, valor := range ganhadores {
         total_ganhadores += valor
-        ganho := (participantes[id] / total_ganhadores) * premiacao
+    }
+    //pagamento 
+    for id := range ganhadores{
+        ganho := (e.participantes[id] / total_ganhadores) * premiacao
         //atribuir ganho ao saldo do Cliente
-        fmt.Println(ganho) //para nn reclamar
+        alterarSaldo(id, ganho, serv_local) // Passa o id do ganhador, o valor do ganho e a estrutura de dados
     }
 }
 
