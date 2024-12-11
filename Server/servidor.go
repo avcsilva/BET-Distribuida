@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -145,7 +147,218 @@ func passa_token(serv_local *Infos_local) {
 
 // Função para atualização de informações do servidor, como clientes e eventos e as contagens de IDs
 // Atualização realizada com base nas informações dos outros servidores
-func atualiza_infos(serv_local *Infos_local) {}
+// Em ideia principal, deve ser chamada apenas na inicialização do servidor
+func atualiza_infos(serv_local *Infos_local) {
+    for _, servidor := range serv_local.servidores {
+        resposta, erro := http.Get(servidor + "/infos") // Requisição GET para obter as informações do servidor
+        if erro != nil { // Se houver erro, o servidor não será atualizado
+            fmt.Printf("Erro ao solicitar informações do servidor %s\n", servidor)
+            continue // O servidor tentará obter informações do próximo servidor
+        }
+
+        defer resposta.Body.Close() // Fecha o corpo da resposta após o uso
+
+        // Criação de estrutura para armazenar as informações obtidas do servidor
+        infos := make(map[string]interface{})
+        if erro := json.NewDecoder(resposta.Body).Decode(&infos); erro != nil { // Decodifica as informações obtidas
+            fmt.Printf("Erro ao decodificar informações do servidor %s\n", servidor)
+            continue // O servidor tentará obter informações do próximo servidor
+        }
+
+        // Mensagem de confirmação de recebimento
+        // juntamente com as informações recebidas
+        fmt.Printf("Informações obtidas do servidor %s: %v\n", servidor, infos)
+
+        // Atualização das informações locais do servidor
+        // com base nas informações obtidas
+
+        // Início obtenção da contagem de IDs de clientes
+        if id_cli, ok := infos["id_cont_cliente"].(float64); ok {
+            id_cont_cliente = int(id_cli)
+        } else {
+            fmt.Printf("Erro ao obter contagem de IDs de clientes do servidor %s\n", servidor)
+        }
+        // Fim obtenção da contagem de IDs de clientes
+
+        // Início obtenção da contagem de IDs de eventos
+        if id_eve, ok := infos["id_cont_evento"].(float64); ok { // Atualização da contagem de IDs de eventos
+            id_cont_evento = int(id_eve)
+        } else {
+            fmt.Printf("Erro ao obter contagem de IDs de eventos do servidor %s\n", servidor)
+        }
+        // Fim obtenção da contagem de IDs de eventos
+
+        // Início obtenção dos clientes
+        if clientes_externos, ok := infos["clientes"].(map[string]interface{}); ok { // Atualização dos clientes
+            for index, item := range clientes_externos {
+                cliente, ok := item.(map[string]interface{}) // Conversão do item para um mapa de informações de cliente
+                if !ok {
+                    fmt.Printf("Erro ao converter informações de clientes do servidor %s\n", servidor)
+                }
+
+                // Obtenção do ID do cliente
+                id, erro := strconv.Atoi(index)
+                if erro != nil {
+                    fmt.Printf("Erro ao converter ID de cliente do servidor %s\n", servidor)
+                }
+
+                // Obtenção do nome do cliente
+                nome, ok := cliente["nome"].(string)
+                if !ok {
+                    fmt.Printf("Erro ao obter nome de cliente do servidor %s\n", servidor)
+                }
+
+                // Obtenção do saldo do cliente
+                saldo, ok := cliente["saldo"].(float64)
+                if !ok {
+                    fmt.Printf("Erro ao obter saldo de cliente do servidor %s\n", servidor)
+                }
+
+                // Início obtenção dos IDs de eventos criados pelo cliente
+                id_ev_cri_slice, ok := cliente["id_eventos_criados"].([]interface{})
+                if !ok {
+                    fmt.Printf("Erro ao obter IDs de eventos criados por cliente do servidor %s\n", servidor)
+                }
+                id_ev_cri := make([]int, len(id_ev_cri_slice))
+                for i, valor := range id_ev_cri_slice {
+                    id_ev, ok := valor.(float64)
+                    if !ok {
+                        fmt.Printf("Erro ao converter ID de evento criado por cliente do servidor %s\n", servidor)
+                    }
+                    id_ev_cri[i] = int(id_ev)
+                }
+                // Fim obtenção dos IDs de eventos criados pelo cliente
+
+                // Início obtenção dos IDs de eventos participados pelo cliente
+                id_ev_part_slice, ok := cliente["id_eventos_participados"].([]interface{})
+                if !ok {
+                    fmt.Printf("Erro ao obter IDs de eventos participados por cliente do servidor %s\n", servidor)
+                }
+                id_ev_part := make([]int, len(id_ev_part_slice))
+                for i, valor := range id_ev_part_slice {
+                    id_ev, ok := valor.(float64)
+                    if !ok {
+                        fmt.Printf("Erro ao converter ID de evento participado por cliente do servidor %s\n", servidor)
+                    }
+                    id_ev_part[i] = int(id_ev)
+                }
+                // Fim obtenção dos IDs de eventos participados pelo cliente
+
+                // Atualização do cliente
+                serv_local.clientes[id] = Cliente{
+                    id: id,
+                    nome: nome,
+                    saldo: saldo,
+                    id_eventos_criados: id_ev_cri,
+                    id_eventos_participados: id_ev_part,
+                }
+            }
+        } else {
+            fmt.Printf("Erro ao obter informações de clientes do servidor %s\n", servidor)
+        }
+        // Fim obtenção dos clientes
+
+        // Início obtenção dos eventos
+        if eventos_externos, ok := infos["eventos"].(map[string]interface{}); ok { // Atualização dos eventos
+            for index, item := range eventos_externos {
+                evento, ok := item.(map[string]interface{}) // Conversão do item para um mapa de informações de evento
+                if !ok {
+                    fmt.Printf("Erro ao converter informações de eventos do servidor %s\n", servidor)
+                }
+
+                // Obtenção do ID do evento
+                id, erro := strconv.Atoi(index)
+                if erro != nil {
+                    fmt.Printf("Erro ao converter ID de evento do servidor %s\n", servidor)
+                }
+
+                // Obtenção do status do evento
+                ativo, ok := evento["ativo"].(bool)
+                if !ok {
+                    fmt.Printf("Erro ao obter status de evento do servidor %s\n", servidor)
+                }
+
+                // Obtenção do ID do cliente criador do evento
+                id_criador, ok := evento["id_criador"].(float64)
+                if !ok {
+                    fmt.Printf("Erro ao obter ID do criador de evento do servidor %s\n", servidor)
+                }
+                id_criador_int := int(id_criador)
+
+                // Obtenção do nome do evento
+                nome, ok := evento["nome"].(string)
+                if !ok {
+                    fmt.Printf("Erro ao obter nome de evento do servidor %s\n", servidor)
+                }
+
+                // Obtenção da descrição do evento
+                descricao, ok := evento["descricao"].(string)
+                if !ok {
+                    fmt.Printf("Erro ao obter descrição de evento do servidor %s\n", servidor)
+                }
+
+                // Início obtenção dos participantes do evento
+                participantes_externos, ok := evento["participantes"].(map[string]interface{})
+                if !ok {
+                    fmt.Printf("Erro ao obter participantes de evento do servidor %s\n", servidor)
+                }
+                participantes := make(map[int]float64)
+                for i, valor := range participantes_externos {
+                    id_part, erro := strconv.Atoi(i)
+                    if erro != nil {
+                        fmt.Printf("Erro ao converter ID de participante de evento do servidor %s\n", servidor)
+                    }
+                    valor_part, ok := valor.(float64)
+                    if !ok {
+                        fmt.Printf("Erro ao obter valor de participante de evento do servidor %s\n", servidor)
+                    }
+                    participantes[id_part] = valor_part
+                }
+                // Fim obtenção dos participantes do evento
+
+                // Início obtenção dos palpites dos participantes do evento
+                palpite_externos, ok := evento["palpite"].(map[string]interface{})
+                if !ok {
+                    fmt.Printf("Erro ao obter palpites de evento do servidor %s\n", servidor)
+                }
+                palpite := make(map[int]string)
+                for i, valor := range palpite_externos {
+                    id_part, erro := strconv.Atoi(i)
+                    if erro != nil {
+                        fmt.Printf("Erro ao converter ID de participante de evento do servidor %s\n", servidor)
+                    }
+                    palpite_part, ok := valor.(string)
+                    if !ok {
+                        fmt.Printf("Erro ao obter palpite de participante de evento do servidor %s\n", servidor)
+                    }
+                    palpite[id_part] = palpite_part
+                }
+                // Fim obtenção dos palpites dos participantes do evento
+
+                // Obtenção do resultado do evento
+                resultado, ok := evento["resultado"].(string)
+                if !ok {
+                    fmt.Printf("Erro ao obter resultado de evento do servidor %s\n", servidor)
+                }
+
+                // Atualização do evento
+                serv_local.eventos[id] = Evento{
+                    id: id,
+                    ativo: ativo,
+                    id_criador: id_criador_int,
+                    nome: nome,
+                    descricao: descricao,
+                    participantes: participantes,
+                    palpite: palpite,
+                    resultado: resultado,
+                }
+            }
+        } else {
+            fmt.Printf("Erro ao obter informações de eventos do servidor %s\n", servidor)
+        }
+        // Fim obtenção dos eventos
+    }
+}
 
 // Função para definir as informações locais do servidor
 func define_info() Infos_local{
