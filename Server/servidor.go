@@ -143,6 +143,10 @@ func passa_token(serv_local *Infos_local) {
     }
 }
 
+// Função para atualização de informações do servidor, como clientes e eventos e as contagens de IDs
+// Atualização realizada com base nas informações dos outros servidores
+func atualiza_infos(serv_local *Infos_local) {}
+
 // Função para definir as informações locais do servidor
 func define_info() Infos_local{
 	var qual_serv, tipo_serv string
@@ -246,7 +250,45 @@ func define_info() Infos_local{
 }
 
 // Função para definir os métodos GET do servidor
-func define_metodo_get(serv_local *Infos_local, serv *gin.Engine){}
+func define_metodo_get(serv_local *Infos_local, serv *gin.Engine){
+    // Método GET para retornar informações armazenadas pelo servidor, como clientes e eventos e as contagens de IDs
+    serv.GET("/infos", func(c *gin.Context){
+        // Criação de estrutura para informações de clientes
+        clientes := make(map[int]map[string]interface{})
+        for id, cliente := range serv_local.clientes{
+            clientes[id] = map[string]interface{}{
+                "nome": cliente.nome,
+                "saldo": cliente.saldo,
+                "id_eventos_criados": cliente.id_eventos_criados,
+                "id_eventos_participados": cliente.id_eventos_participados,
+            }
+        }
+
+        // Criação de estrutura para informações de eventos
+        eventos := make(map[int]map[string]interface{})
+        for id, evento := range serv_local.eventos{
+            eventos[id] = map[string]interface{}{
+                "ativo": evento.ativo,
+                "id_criador": evento.id_criador,
+                "nome": evento.nome,
+                "descricao": evento.descricao,
+                "participantes": evento.participantes,
+                "palpite": evento.palpite,
+                "resultado": evento.resultado,
+            }
+        }
+
+        // Criação de estrutura para o retorno geral de informações
+        infos := map[string]interface{}{
+            "clientes": clientes,
+            "eventos": eventos,
+            "id_cont_cliente": id_cont_cliente,
+            "id_cont_evento": id_cont_evento,
+        }
+
+        c.JSON(http.StatusOK, infos) // Retorna as informações armazenadas pelo servidor
+    })
+}
 
 // Função para definir os métodos POST do servidor
 func define_metodo_post(serv_local *Infos_local, serv *gin.Engine){
@@ -325,6 +367,7 @@ func calcularPremio() {
 func main() {
     serv_local := define_info()
     servidor := define_servidor(&serv_local)
+    atualiza_infos(&serv_local)
     go passa_token(&serv_local)
     go existe_token(&serv_local)
     servidor.Run(serv_local.porta)
