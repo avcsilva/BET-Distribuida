@@ -592,6 +592,20 @@ func calcularPremio(e Evento, serv_local *Infos_local) {
     }
 }
 
+func resultadoEvento(id int, resultado string, il *Infos_local) bool {
+    // Verificar se o evento existe no mapa
+    evento, encontrado := il.eventos[id]
+    if !encontrado {
+        return false // Retorna falso se o evento não for encontrado
+    }
+
+    // Atualizar o resultado do evento diretamente no mapa
+    evento.resultado = resultado
+    il.eventos[id] = evento // Reatribuir o evento ao mapa
+    
+    calcularPremio(evento, il) // Calcula o prêmio e atribui aos ganhadores
+    return true
+}
 
 func main() {
     serv_local := define_info()
