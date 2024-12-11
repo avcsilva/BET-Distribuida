@@ -72,30 +72,38 @@ func existe_token(serv_local *Infos_local) {
         // Ou seja, verifica se há um token circulando pelo sistema em um período de 3 segundos
         for i := 0; i < 3; i++ {
             if token { // Se houver token, o servidor atual não precisa gerar um novo
+                fmt.Println("Token encontrado.")
                 continue
             }
             // Conta 1 segundo
             time.Sleep(1 * time.Second)
+            fmt.Printf("%ss, token ainda não encontrado.\n", strconv.Itoa(i + 1))
         } // Caso não haja token em 3 segundos, o servidor atual gerará um novo token
 
         if (serv_local.qual_serv == "A") { // Tempo de espera para cada servidor gerar um novo token
             time.Sleep(100 * time.Millisecond) // Servidor A espera apenas 0,1 segundos para gerar um novo token
             if token { // Se o token já foi gerado por outro servidor, o servidor atual não precisa gerar um novo
+                fmt.Println("Token encontrado.")
                 continue
             }
             token = true
+            fmt.Println("Token gerado servidor A.")
         } else if (serv_local.qual_serv == "B") { // Tempo de espera para cada servidor gerar um novo token
             time.Sleep(300 * time.Millisecond) // Servidor B espera 0,3 segundos para gerar um novo token
             if token { // Se o token já foi gerado por outro servidor, o servidor atual não precisa gerar um novo
+                fmt.Println("Token encontrado.")
                 continue
             }
             token = true
+            fmt.Println("Token gerado servidor B.")
         } else if (serv_local.qual_serv == "C") { // Tempo de espera para cada servidor gerar um novo token
             time.Sleep(600 * time.Millisecond) // Servidor C espera 0,6 segundos para gerar um novo token
             if token { // Se o token já foi gerado por outro servidor, o servidor atual não precisa gerar um novo
+                fmt.Println("Token encontrado.")
                 continue
             }
             token = true
+            fmt.Println("Token gerado servidor C.")
         }
     }
 }
@@ -118,11 +126,14 @@ func envia_req_token(servidor string) bool {
 func passa_token(serv_local *Infos_local) {
     for{
         if (token) { // Se o servidor possuir o token, irá mantê-lo por 1 seguno ou até terminar sua tarefa
+            fmt.Println("Token em posse do servidor.")
             trava_token = true
             for (trava_token  || !tarefa_ok) { // Enquanto a trava estiver ativa ou a tarefa não estiver concluída, o servidor segura o token
+                fmt.Println("Token em espera.")
                 time.Sleep(1 * time.Second)
                 trava_token = false
             }
+            fmt.Println("Token em liberação.")
 
             // Com trava não ativa e tarefa concluída, o servidor passa o token para o próximo
             token = false // O servidor atual não possui mais o token
@@ -132,7 +143,7 @@ func passa_token(serv_local *Infos_local) {
                     fmt.Printf("Token enviado para o servidor %s\n", servidor)
                     break
                 } else if (index == 0){ // Se o token não for enviado com sucesso, o servidor atual tentará enviar para o próximo servidor
-                    fmt.Printf("Erro ao enviar token para o servidor %s\n. Tentando enviar ao próximo.", servidor)
+                    fmt.Printf("Erro ao enviar token para o servidor %s. Tentando enviar ao próximo.\n", servidor)
                     continue
                 } else { // Se o token não for enviado com sucesso, o servidor atual permanecerá com o token
                     fmt.Printf("Erro ao enviar token para o servidor %s\n", servidor)
