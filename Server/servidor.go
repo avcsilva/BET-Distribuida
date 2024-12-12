@@ -50,6 +50,7 @@ type Evento struct {
     descricao       string // Descrição do evento
     participantes 	map[int]float64 // Mapa de participantes baseado em seu ID e valor de aposta (Ex.: {1: 30, 2: 25})
     palpite         map[int]string // Mapa de palpites baseado em seu ID e resultado (Ex.: {1: "A", 2: "B"})
+    porcentagemCriador float64 // Porcentagem do valor total do evento que o criador receberá
     resultado       string // Resultado do evento
 }
 
@@ -575,6 +576,12 @@ func calcularPremio(e Evento, serv_local *Infos_local) {
     for _, valor := range e.participantes{
         premiacao += valor
     }
+
+    // Calcula o valor do ganho do criador
+    ganhoCriador := (e.porcentagemCriador/100) * premiacao
+    alterarSaldo(e.id_criador, ganhoCriador, serv_local) // Passa o id do criador, o valor do ganho e a estrutura de dados
+    premiacao -= ganhoCriador
+
     for ip, palpt := range e.palpite{
         if palpt == e.resultado{
             ganhadores[ip] = e.participantes[ip]

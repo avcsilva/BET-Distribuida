@@ -73,6 +73,7 @@ func main() {
 		descricao		string
 		participantes 	map[int]float64  //id dos participantes e valor pago
 		palpite			map[int]string //id dos participantes e palpite
+		porcentagemCriador float64
 		resultado		string
 	}
 
@@ -81,6 +82,7 @@ func main() {
 	limpar_terminal()
 	loop := 1
 	for loop == 1 {
+		limpar_terminal()
 		var selecao string
 		
 		fmt.Println("	  Menu")
@@ -88,6 +90,8 @@ func main() {
 		fmt.Println("2 - Criar um evento")
 		fmt.Println("3 - Ver eventos [Participados]")
 		fmt.Println("4 - Ver eventos [Criados]")
+		fmt.Println("5 - Depositar")
+		fmt.Println("6 - Sacar") 
 		fmt.Println("0 - Encerrar sessão")
 		fmt.Scan(&selecao)
 
@@ -111,6 +115,13 @@ func main() {
 			var descricao string
 			fmt.Println("Defina a descrição do evento: ")
 			fmt.Scan(&descricao)
+			var porcentagemCriador float64
+			fmt.Println("Defina a porcentagem que o voce irá receber (são pemitido de 0% a 50%): ")
+			fmt.Scan(&porcentagemCriador)
+			for porcentagemCriador < 0 || porcentagemCriador > 50 {
+				fmt.Println("Porcentagem invalida, digite novamente: ")
+				fmt.Scan(&porcentagemCriador)
+			}
 
 			// atribuido valores
 			criar := Evento{
@@ -121,6 +132,7 @@ func main() {
 				descricao: descricao,
 				participantes: nil,
 				palpite: nil,
+				porcentagemCriador: 0,
 				resultado: "",
 			}
 
@@ -141,6 +153,17 @@ func main() {
 			//segestao 3 - ambos (AI COMPLICA)
 			//desativado - opcoes volta e detalhe (NAO PODE EDITAR NADA)
 			//ativo - opcoes voltar, informar vencedor (isso poes como evento finalizado) (NADA MAIS PODE SER ALTERADO)
+		
+		} else if selecao == "5" { //Depositar
+			limpar_terminal()
+			//solicitar valor
+			//encaminhar para o servidor
+			//receber confirmação
+		} else if selecao == "6" { //Sacar
+			limpar_terminal()
+			//solicitar valor
+			//encaminhar para o servidor
+			//receber confirmação
 		} else if selecao == "0" {
 			limpar_terminal()
 			displayMessageWithColors("Te vejo em breve :D", 3)
