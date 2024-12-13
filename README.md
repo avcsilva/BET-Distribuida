@@ -247,10 +247,10 @@
             Por utilizar do <em>framework</em> Gin, o sistema usufrui de funcionalidades tal como a de concorrência, que permite que múltiplas requisições sejam processadas simultaneamente, garantindo que o sistema possa lidar com diversos usuários conectados e requisições ao mesmo tempo. A concorrência é uma característica essencial para sistemas distribuídos, uma vez que a comunicação entre os componentes do sistema ocorre de forma assíncrona e não sequencial, permitindo que o servidor possa atender a múltiplas requisições de clientes simultaneamente.
         </p>
         <p>
-            Entretanto, fora as funcionalidades do Gin, foi implementado para este projeto um modelo de comunicação baseada no protocolo token ring, que permite que os servidores possam se comunicar entre si de maneira ordenada e compartilhar informações sobre os clientes e eventos cadastrados. O protocolo token ring é um modelo de comunicação em que os servidores se comunicam de forma circular e ordenada, enviando e recebendo mensagens entre si e coordenando suas operações, garantindo que todas as informações estejam atualizadas em todos os servidores e que não haja operações concorrentes entre si ocorrendo de forma simultânea. Dessa forma, o protocolo token ring permite que os servidores possam realizar operações de forma segura e eficiente, garantindo a consistência dos dados e a integridade do sistema.
+            Entretanto, fora as funcionalidades do Gin, foi implementado para este projeto um modelo de comunicação baseada no protocolo <em>token ring</em>, que permite que os servidores possam se comunicar entre si de maneira ordenada e compartilhar informações sobre os clientes e eventos cadastrados. O protocolo <em>token ring</em> é um modelo de comunicação em que os servidores se comunicam de forma circular e ordenada, enviando e recebendo mensagens entre si e coordenando suas operações, garantindo que todas as informações estejam atualizadas em todos os servidores e que não haja operações concorrentes entre si ocorrendo de forma simultânea. Dessa forma, o protocolo <em>token ring</em> permite que os servidores possam realizar operações de forma segura e eficiente, garantindo a consistência dos dados e a integridade do sistema.
         </p>
         <p>
-            O protocolo token ring deste projeto foi implementado seguindo as seguintes regras:
+            O protocolo <em>token ring</em> deste projeto foi implementado seguindo as seguintes regras:
             <li>
                 No sistema em execução, haverá a presença de um único token que circulará entre os servidores, permitindo que cada servidor possa realizar operações de leitura e escrita de forma ordenada e segura.
             </li>
@@ -293,7 +293,7 @@
 </div>
 
 <div id="premiacao">
-<h2>Distribuição do premio dos eventos<br></h2>
+<h2>Distribuição do prêmio dos eventos<br></h2>
 <p>
     A distribuição de prêmios é realizada de forma simples e justa entre os participantes dos eventos. Para facilitar a explicação, os participantes são divididos em duas categorias: ganhadores e perdedores. O valor total da premiação corresponde a uma porcentagem, definida pelo criador do evento, sobre o total arrecadado com as apostas. Essa porcentagem pode variar entre 50% a 100%.
 </p>
