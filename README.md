@@ -36,26 +36,41 @@
     <p>
         A construção do projeto foi planejada para garantir sua eficiência e viabilidade dentro do período estipulado para o desenvolvimento. Diversas abordagens alternativas, apesar de apresentarem elevado potencial, foram descartadas devido a restrições de tempo, priorizando soluções práticas e eficazes.
     </p>
+    <h3> Golang </h3>
     <p>
         A definição do código-fonte foi embasada no propósito geral da aplicação, que se concentra na comunicação cliente-servidor em uma arquitetura de servidores distribuídos. Um dos principais desafios identificados foi a questão da concorrência. Para lidar com essa problemática, optou-se pela utilização da linguagem Go (Golang). Essa linguagem é amplamente reconhecida por sua eficiência em lidar com aplicações concorrentes, sendo especialmente adequada para o desenvolvimento de servidores web e sistemas que demandam otimização de recursos de hardware.
     </p>
     <p>
-        Além disso, a linguagem Go destaca-se por seu uso extensivo no desenvolvimento de containers, como o Docker. Sua capacidade de compilação rápida e execução em diferentes arquiteturas torna-a ideal para ambientes de contêineres, oferecendo vantagens significativas, como o baixo consumo de memória e CPU.
+        Além disso, a linguagem Go destaca-se por seu uso extensivo no desenvolvimento de containers, como o Docker. Sua capacidade de compilação rápida e execução em diferentes arquiteturas torna-a ideal para ambientes de contêineres, oferecendo vantagens significativas, como o baixo consumo de memória e CPU. Essas características foram determinantes para a escolha da linguagem Go como base para o desenvolvimento do projeto.
     </p>
+    <h3> Docker </h3>
     <p>
         Com o objetivo de garantir a portabilidade da aplicação para diferentes computadores e simplificar sua execução para o usuário final, foi empregado o uso de Docker. Essa tecnologia permite a criação de um container contendo todos os requisitos necessários para a execução da aplicação, eliminando a necessidade de configurações manuais por parte do usuário. Com isso, basta que o usuário execute o container para utilizar o sistema, independentemente de sua infraestrutura local.
     </p>
+    <h3> Token Ring </h3>
     <p>
-        (Token Ring)
+        Como forma de tratar a concorrência distribuída na comunicação entre os 3 servidores e clientes, foi implementado um protocolo de comunicação baseado no modelo <em>token ring</em>. Esse modelo, em sua idealização original, é utilizado em redes de computadores para garantir a passagem de um token entre os dispositivos conectados, permitindo que apenas o dispositivo com o token possa transmitir dados. No contexto do projeto, o token é utilizado para coordenar as operações dos servidores, garantindo que apenas um servidor possa realizar operações de leitura e escrita de dados por vez, evitando conflitos e garantindo a consistência dos dados. A definição do protocolo implementado especificamente para este projeto será melhor explicitada no tópico sobre a concorrência distribuída, no qual serão detalhadas as regras e o funcionamento do protocolo.
+    </p>
+    <h3> Comunicação RESTful </h3>
+    <p>
+        A comunicação entre os servidores e os clientes foi projetada com base no modelo RESTful, utilizando requisições HTTP para a troca de informações. O modelo RESTful é amplamente utilizado em aplicações web para garantir a interoperabilidade entre sistemas e a simplicidade na comunicação entre os componentes. Por meio de requisições HTTP, os clientes podem enviar solicitações aos servidores e receber respostas com os dados solicitados, permitindo a interação entre os componentes de forma eficiente e segura. A escolha do modelo RESTful para a comunicação do projeto foi motivada pela sua simplicidade e eficácia na troca de informações, garantindo a integridade e a segurança dos dados transmitidos.
+    </p>
+    <h3> Gin </h3>
+    <p>
+        Para a implementação da comunicação RESTful, foi utilizado o <em>framework</em> Gin, que facilita a criação de rotas e a comunicação entre os componentes do sistema. O Gin é um <em>framework</em> web leve e de alto desempenho, desenvolvido em Go, que oferece uma série de funcionalidades para a criação de APIs RESTful de forma simples e eficiente. Com o Gin, é possível definir rotas, métodos de requisição e tratamento de erros de forma rápida e intuitiva, permitindo a implementação de uma comunicação eficaz entre os servidores e os clientes. A escolha do Gin para a implementação da comunicação RESTful foi motivada pela sua facilidade de uso e pela sua eficiência na criação de APIs web, garantindo a integridade e a segurança das informações transmitidas.
+    <h3> Blockchain </h3>
+    <p>
+        Uma abordagem alternativa considerada, porém descartada, foi a utilização de blockchain para garantir a segurança. A blockchain é uma tecnologia que permite o armazenamento de informações de forma descentralizada e segura, garantindo a integridade dos dados e a transparência das operações. No contexto do projeto, a blockchain poderia ser utilizada para registrar as apostas realizadas pelos clientes e os eventos criados, garantindo que as informações fossem imutáveis e auditáveis. Além disso, a blockchain poderia ser utilizada para garantir a segurança das transações financeiras, evitando fraudes e garantindo a integridade dos saldos dos clientes. Para sua implementação, seria necessário o desenvolvimento de contratos inteligentes e a integração com uma rede blockchain, como a Ethereum. Com isso, teriam sido utilizadas as ferramentas Ganache e Truffle para o desenvolvimento e testes dos contratos inteligentes (feitos em Solidity), e a conexão com a rede Ethereum para a execução das transações, utilizando-se para isso a biblioteca go-ethereum. 
+    </p>
+    <p> 
+        No entanto, devido à complexidade dessa abordagem e ao curto período disponível para o desenvolvimento, optou-se por uma solução mais prática e viável, baseada em servidores distribuídos e comunicação RESTful. A blockchain, apesar de oferecer vantagens significativas em termos de segurança e transparência, demandaria um tempo considerável para sua implementação e testes, o que poderia comprometer a entrega do projeto dentro do prazo estabelecido. Dessa forma, a decisão de utilizar servidores distribuídos e comunicação RESTful foi tomada com base na viabilidade e eficiência da solução, garantindo a entrega de um sistema funcional e eficaz dentro do prazo estipulado.
+    </p>
+    <h3> Testes </h3>
+    <p>
+        Para garantir a eficiência e a segurança do sistema, foram realizados testes unitários e de integração em todas as etapas do desenvolvimento. Os testes unitários foram utilizados para verificar o funcionamento correto de cada componente do sistema, garantindo que as operações fossem realizadas de acordo com as especificações e que os dados fossem armazenados e recuperados corretamente. Os testes de integração foram utilizados para verificar a comunicação entre os componentes do sistema, garantindo que as requisições HTTP fossem enviadas e recebidas corretamente e que os dados fossem transmitidos de forma segura e eficiente. Com a realização desses testes, foi possível identificar e corrigir eventuais falhas e garantir a qualidade e a eficiência do sistema como um todo.
     </p>
     <p>
-        (Gin)
-    </p>
-    <p>
-        Foi considerada a utilização de blockchain para garantir a segurança nas apostas e transações, utilizando ferramentas como Go Ethereum e Ganache. Contudo, devido à complexidade dessa abordagem e ao curto período disponível para o desenvolvimento, optou-se por uma solução prática e viável dentro do prazo estabelecido.
-    </p>
-    <p>
-        (conclucao)
+        Os testes realizados para este projeto, cujos resultados serão apresentados posteriormente, foram realizados a partir da execução de múltiplos terminais simultâneamente, simulando a existência de 3 servidores distintos, além de múltiplos clientes conectados a cada um deles. Os testes foram realizados em ambiente local, utilizando a mesma máquina para a execução dos servidores e dos clientes.
     </p>
 </div>
 
@@ -153,7 +168,7 @@
     <h2>Protocolo de comunicação</h2>
     <div align="justify">
     <p>
-        Toda a comunicação do sistema foi projetada sobre o modelo RESTful, utilizando requisições HTTP entre servidores e clientes. Por ser uma comunicação baseada em HTTP, o sistema não exige uma conexão previamente estabelecida e é inerentemente stateless, ou seja, o estado da interação não é mantido entre as requisições. A cada solicitação, o cliente envia os dados necessários para a operação, e a resposta é processada com base na situação atual dos servidores. Essa abordagem elimina a dependência de sessões persistentes, oferecendo maior escalabilidade e resiliência, pois o sistema continua funcional mesmo que um dos servidores deixe de responder temporariamente.
+        Toda a comunicação do sistema foi projetada sobre o modelo RESTful, utilizando requisições HTTP entre servidores e clientes. Por ser uma comunicação baseada em HTTP, o sistema não exige uma conexão previamente estabelecida e é inerentemente <em>stateless</em>, ou seja, o estado da interação não é mantido entre as requisições. A cada solicitação, o cliente envia os dados necessários para a operação, e a resposta é processada com base na situação atual dos servidores. Essa abordagem elimina a dependência de sessões persistentes, oferecendo maior escalabilidade e resiliência, pois o sistema continua funcional mesmo que um dos servidores deixe de responder temporariamente.
     </p>
     <p>
         O sistema desenvolvido tem como proposto o seguinte protocolo de comunicação, iniciando-se a partir do momento em que o usuário insere seu nome de usuário para se conectar ao servidor:
