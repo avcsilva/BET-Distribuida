@@ -23,7 +23,7 @@
         <li><a href="#arquitetura">Arquitetura do sistema</a></li>
         <li><a href="#comunicacao">Protocolo de comunicação</a></li>
         <li><a href="#concorrência">Concorrência distribuída</a></li>
-        <li><a href="#frontend">Interface do usuário</a></li>
+        <li><a href="#premiacao">Distribuição do premio dos eventos</li>
         <li><a href="#resultados">Resultados</a></li>
         <li><a href="#execucao">Execução do Projeto</a></li>
         <li><a href="#conclusao">Conclusão</a></li>
@@ -47,7 +47,7 @@
             Os clientes são cadastrados automaticamente com seus nomes de usuário assim que realizam seu primeiro acesso, o sistema armazenará seus dados de saldo e permite realizar depósitos, tal como utilizar os valores disponíveis em suas apostas. As informações de cadastro dos clientes são enviadas a todos os servidores ligados, permitindo que todos tenham conhecimento das participações em eventos e clientes existentes. Dessa forma, um usuário cliente pode acessar seus dados de saldo pela conexão com qualquer um dos três servidores, necessitando apenas informar o mesmo nome de usuário inserido inicialmente.
         </p>
         <p>
-            Os eventos podem ser participados por qualquer cliente desde que o evento esteja disponível, ou seja, que ainda naão tenha sido finalizado e seu resultado tenha sido divulgado.
+            Os eventos podem ser participados por qualquer cliente desde que o evento esteja disponível, ou seja, que ainda não tenha sido finalizado e seu resultado tenha sido divulgado.
         </p>
         <p>
             As ações do servidor incluem:
@@ -248,103 +248,100 @@
     </div>
 </div>
 
-<div id="frontend">
-    <h2>Interface do usuário</h2>
-    <div align="justify">
-        <p>
-            Para a criação do frontend, foi utilizado <a href="https://react.dev">React</a> com JavaScript para construir a interface do usuário, enquanto as requisições HTTP foram implementadas com a biblioteca <a href="https://www.npmjs.com/package/axios"> Axios</a>, permitindo uma comunicação eficiente com o backend. Além disso, foi adotado o <a href="https://mui.com/material-ui/">Material UI</a> para estilizar componentes e manter uma aparência consistente e moderna, facilitando o desenvolvimento e garantindo uma experiência de usuário responsiva e visualmente agradável.
-        </p>
-        <h3>Terminal</h3>
-        <h4>Executar</h4>
-        <p>
-            Para executar o código do frontend via Docker, siga os passos abaixo:
-        </p>
-        <ol>
-        <li>Navegue até o diretório da aplicação no seu terminal.</li>
-        <li>Digite o comando abaixo no terminal para criar a imagem Docker e executar a aplicação automaticamente:
-            <pre><code>docker compose up --build</code></pre>
-        </li>
-        <li>Quando a execução estiver concluída, o terminal exibirá a URL onde a aplicação está disponível:
-            <code>http://localhost:8088</code>
-        </li>
-        <li>Para abrir a aplicação diretamente no navegador, pressione a tecla <code>Ctrl</code> enquanto clica com o botão direito do mouse sobre o link no terminal.</li>
-    </ol>
-    </div>
-    <h3>Interface</h3>
-    <h4>Tela de Cadastro/Login</h4>
-    <p>
-    Ao abrir a aplicação no navegador, o usuário verá uma solicitação de cadastro/login.
-    </p>
-    <h5>
-        Funcionamento:
-    </h5>
+<div id="premiacao">
+<h2>Distribuição do premio dos eventos<br></h2>
+
+<p>
+    A distribuição de prêmios é realizada de forma simples e justa entre os participantes dos eventos. Para facilitar a explicação, os participantes são divididos em duas categorias: ganhadores e perdedores. O valor total da premiação corresponde a uma porcentagem, definida pelo criador do evento, sobre o total arrecadado com as apostas. Essa porcentagem pode variar entre 50% a 100%.
+</p>
+
+<p>
+    A premiação destinada aos ganhadores é distribuída proporcionalmente, com base na contribuição de cada um para o montante total arrecadado apenas pelos ganhadores. Em outras palavras, a quantia que cada vencedor apostou determina sua parcela do prêmio total, garantindo uma divisão justa e proporcional ao valor que ele contribuiu.
+</p>
+
+<p>
+    Se um jogador A tiver apostado equivalente a 30% do valor arrecadado apenas pelo total de arrecadação de ganhadores, ele receberá 30% do ganho da premiação total, ou seja, a porcentagem da soma das apostas dos ganhadores e perdedores.
+</p>
+<h3>Fórmulas<br></h3>
+<ul>
+    <li>
+        Premiação: Soma de todas as apostas para a premiação menos a porcentagem do criador do evento.
+    </li>
+    <li>
+        Valor Total dos Ganhadores (VTG): Valor total arrecadado pelos participantes que ganharam.
+    </li>
+</ul>
+<h3>Exemplo<br></h3>
+<ul>
+    <li>Considere 5 jogadores e suas apostas:</li>
+    <ul>
+        <li>A = R$: 15</li>
+        <li>B = R$: 715</li>
+        <li>C = R$: 45</li>
+        <li>D = R$: 40</li>
+        <li>E = R$: 185</li>
+    </ul>
+    <li>
+        Os jogadores A, C e D ganharam.
+    </li>
+    <li>
+        Criador fica com 30%.
+    </li>
+</ul>
+    <h3>Cálculos<br></h3>
     <ul>
         <li>
-            Se os dados do usuário não estiverem registrados no servidor, um novo cadastro será realizado, e o usuário receberá um identificador único (ID).
+            Premiação: (A + B + C + D + E) = 1000
+        </li>
+        <li>
+            VTG: (A + C + D) = 100
+        </li>
+        <li>
+            Valor que o criador receberá:
+        </li>
+        <ul>
+            <li>
+                VCR = (30 / 100) * Premiação = (30 / 100) * 1000 = 300
+            </li>
+        </ul>
+        <li>
+            Atualizando o valor da premiação:
+        </li>
+        <ul>
+            <li>
+                Premiação = Premiação - VCR = 1000 - 300 = 700
+            </li>
+        </ul>
+        <li>
+            Atribuindo ganho aos jogadores:
+        </li>
+        <ul>
+            <li>
+                Porcentagem por Jogador (PPJ): (Valor pago * 100) / VTG
+            </li>
+            <li>
+                Ganho por Jogador (GPJ): (PPJ * Premiação) / 100
+            </li>
+        </ul>
+    </ul>
+    <h4>Exemplo para o Jogador A que apostou 15:<br></h4>
+    <ul>
+        <li>
+            PPJ = (15 * 100) / 100 = 15, ou seja, 15%
             </li>
         <li>
-            Se os dados do usuário já existirem no servidor, o sistema reconhecerá o usuário e retornará seus dados, permitindo o acesso aos recursos da aplicação.
-            </li>
+            GPJ = (15 * 700) / 100 = 105, ou seja, ele ganhará R$: 105
+        </li>
     </ul>
-    <p align="center">
-      <img src="img/Tela-CadastroLogin.png" width = "400" />
-    </p>
-    <p align="center"><strong>Tela Cadastro/Login</strong></p>
-    <h5>Conectando ao servidor</h5>
-    <p>Ao registrar-se, o servidor ainda não exibirá as rotas disponíveis. O usuário deve informar a URL do servidor desejado na barra de pesquisa e, em seguida, clicar no ícone de lupa para se conectar. Se o usuário pressionar a tecla Enter enquanto estiver na barra de pesquisa, o sistema retornará à página de cadastro/login. A URL deve seguir o formato padrão:</p>
-    <p align="center">
-      <img src="img/Exemplos-url.png" width = "400" />
-    </p>
-    <p align="center"><strong>Formato da URL</strong></p>
-    <p>
-    Na barra de pesquisa, o sistema informará se o usuário está conectado ao servidor ou se ocorreu algum erro. Em caso de erro, existem dois possíveis motivos: o servidor está off-line ou a URL está incorreta, mas o sistema não faz a distinção entre esses casos. Quando conectado ao servidor, pode haver um pequeno atraso na exibição das rotas. É importante observar que, mesmo estando conectado ao Servidor A, o usuário poderá receber dados dos Servidores B e C, desde que estes estejam ativos. Os cadastros realizados são independentes do servidor ao qual o usuário está conectado, pois todos os servidores armazenam os dados. Somente se os três servidores estiverem off-line simultaneamente, os dados serão perdidos.
-    </p>
-    <p align="center">
-      <img src="img/Tela-Principal.png" width = "400" />
-    </p>
-    <p align="center"><strong>Tela Principal - Rotas disponíveis para compra</strong></p>
-    <h5>Comprar</h5>
-    <p>
-Para realizar uma compra, basta clicar no botão "COMPRAR" abaixo do nome da rota desejada. As rotas exibidas são as disponíveis para compra, com algumas exceções. A interface é atualizada periodicamente, portanto pode haver momentos em que a rota já foi comprada, mas a interface ainda não refletiu essa alteração. Nesse caso, uma mensagem indicará que a compra não foi possível, e a rota desaparecerá da lista em breve.</p>
-<p>Se a compra for bem-sucedida, a interface exibirá uma confirmação. Caso ocorra um erro na compra, ele pode ter duas causas: outro usuário comprou a rota antes da atualização da sua interface ou o servidor ao qual você está conectado ficou off-line. O sistema não diferencia entre esses motivos.</p>
-<p align="center">
-      <img src="img/Compra-realizada.png" width = "400" />
-    </p>
-    <p align="center"><strong>Compra realizada com sucesso!</strong></p>
-    <p align="center">
-      <img src="img/Erro-comprar.png" width = "400" />
-    </p>
-    <p align="center"><strong>Erro ao fazer requisição de comprar</strong></p>
-<p>Recomenda-se aguardar alguns segundos; se a rota não desaparecer, é provável que o servidor tenha ficado off-line. Nesse caso, conecte-se a outro servidor inserindo a URL na barra de pesquisa e clicando na lupa, sem necessidade de realizar novo login. A troca de servidor pode ser feita a qualquer momento.</p>
-<h5>Visualizar suas compras</h5>
-<p>Para visualizar suas compras, clique no botão "Passagens" na barra de navegação (NavBar). Isso abrirá um menu lateral exibindo todas as passagens adquiridas. Para cancelar uma passagem, basta clicar no botão "CANCELAR"; a passagem será removida da lista e reaparecerá na tela principal como disponível para venda.</p>
-<p align="center">
-      <img src="img/FuncaoNavBar.png" width = "400" />
-    </p>
-    <p align="center"><strong>Funçoes da NavBar</strong></p>
-    <p align="center">
-      <img src="img/MinhasCompras.png" width = "400" />
-    </p>
-    <p align="center"><strong>Passagens compradas</strong></p>
-    <h5>Outras funcionalidades</h5>
-    <p>O código é responsivo e se adapta a diferentes tamanhos de tela, permitindo sua execução em qualquer dispositivo. Ele também oferece a opção de troca de tema, com modos claro e escuro, proporcionando uma melhor experiência para diversos perfis de usuários.</p>
-    <p align="center">
-      <img src="img/TemaEscuro.png" width = "400" />
-    </p>
-    <p align="center"><strong>Tema escuro - Tela principal</strong></p>
-    <p align="center">
-      <img src="img/TemaEscuro_MenuLateral.png" width = "400" />
-    </p>
-    <p align="center"><strong>Tema escuro - Menu lateral</strong></p>
-    <p align="center">
-      <img src="img/TemaClaro.png" width = "400" />
-    </p>
-    <p align="center"><strong>Tema claro - Tela principal</strong></p>
-    <p align="center">
-      <img src="img/TemaClaro_MenuLateral.png" width = "400" />
-    </p>
-    <p align="center"><strong>Tema claro - Menu lateral</strong></p>
+    <h4>Demais jogadores<br></h4>
+    <ul>
+        <li>C = R$: 315</li>
+        <li>D = R$: 280</li>
+    </ul>
+    <p>Os demais jogadores não receberão.</p>
 </div>
+
+
 
 <div id="resultados">
     <h2>Resultados</h2>
@@ -382,7 +379,7 @@ Para realizar uma compra, basta clicar no botão "COMPRAR" abaixo do nome da rot
     Com o terminal aberto, navegue até o diretório onde os arquivos foram baixados utilizando o comando <code>cd</code>, por exemplo,
     </p>
     <p> 
-    <code>cd C:\PASSCOM-Venda-Compartilhada-de-Passagens\Server</code>
+    <code>cd C:\BET-Distribuida\Server</code>
     </p>
     <h3>Sem docker</h3>
     <p>
@@ -441,10 +438,6 @@ Logo após, será solicitado que você insira o endereço da conexão exatamente
 O menu do cliente será exibido, permitindo que o usuário interaja com o sistema utilizando os números do teclado para selecionar as opções desejadas.
 
 </p>
-    <h3>Comprar/Cancelar Compra</h3>
-    <p>
-        Na tela que apresenta os nomes das cidades disponíveis para compra ou cancelamento de passagens, é importante que o nome da cidade seja digitado exatamente como está exibido, respeitando letras maiusculas e/ou minúsculas e eventuais assentos.
-    </p>
 </div>
 
 <div id="conclusao">
