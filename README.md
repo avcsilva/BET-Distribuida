@@ -20,6 +20,7 @@
 <h1 align="center">Sumário</h1>
 <div id="sumario">
     <ul>
+        <li><a href="#fundamentacao">Fundamentação teórica</a></li>
         <li><a href="#arquitetura">Arquitetura do sistema</a></li>
         <li><a href="#comunicacao">Protocolo de comunicação</a></li>
         <li><a href="#concorrência">Concorrência distribuída</a></li>
@@ -28,6 +29,34 @@
         <li><a href="#execucao">Execução do Projeto</a></li>
         <li><a href="#conclusao">Conclusão</a></li>
     </ul>
+</div>
+
+<div id="fundamentacao">
+    <h2>Fundamentação teórica</h2>
+    <p>
+        A construção do projeto foi planejada para garantir sua eficiência e viabilidade dentro do período estipulado para o desenvolvimento. Diversas abordagens alternativas, apesar de apresentarem elevado potencial, foram descartadas devido a restrições de tempo, priorizando soluções práticas e eficazes.
+    </p>
+    <p>
+        A definição do código-fonte foi embasada no propósito geral da aplicação, que se concentra na comunicação cliente-servidor em uma arquitetura de servidores distribuídos. Um dos principais desafios identificados foi a questão da concorrência. Para lidar com essa problemática, optou-se pela utilização da linguagem Go (Golang). Essa linguagem é amplamente reconhecida por sua eficiência em lidar com aplicações concorrentes, sendo especialmente adequada para o desenvolvimento de servidores web e sistemas que demandam otimização de recursos de hardware.
+    </p>
+    <p>
+        Além disso, a linguagem Go destaca-se por seu uso extensivo no desenvolvimento de containers, como o Docker. Sua capacidade de compilação rápida e execução em diferentes arquiteturas torna-a ideal para ambientes de contêineres, oferecendo vantagens significativas, como o baixo consumo de memória e CPU.
+    </p>
+    <p>
+        Com o objetivo de garantir a portabilidade da aplicação para diferentes computadores e simplificar sua execução para o usuário final, foi empregado o uso de Docker. Essa tecnologia permite a criação de um container contendo todos os requisitos necessários para a execução da aplicação, eliminando a necessidade de configurações manuais por parte do usuário. Com isso, basta que o usuário execute o container para utilizar o sistema, independentemente de sua infraestrutura local.
+    </p>
+    <p>
+        (Token Ring)
+    </p>
+    <p>
+        (Gin)
+    </p>
+    <p>
+        Foi considerada a utilização de blockchain para garantir a segurança nas apostas e transações, utilizando ferramentas como Go Ethereum e Ganache. Contudo, devido à complexidade dessa abordagem e ao curto período disponível para o desenvolvimento, optou-se por uma solução prática e viável dentro do prazo estabelecido.
+    </p>
+    <p>
+        (conclucao)
+    </p>
 </div>
 
 <div id="arquitetura">
@@ -250,15 +279,12 @@
 
 <div id="premiacao">
 <h2>Distribuição do premio dos eventos<br></h2>
-
 <p>
     A distribuição de prêmios é realizada de forma simples e justa entre os participantes dos eventos. Para facilitar a explicação, os participantes são divididos em duas categorias: ganhadores e perdedores. O valor total da premiação corresponde a uma porcentagem, definida pelo criador do evento, sobre o total arrecadado com as apostas. Essa porcentagem pode variar entre 50% a 100%.
 </p>
-
 <p>
     A premiação destinada aos ganhadores é distribuída proporcionalmente, com base na contribuição de cada um para o montante total arrecadado apenas pelos ganhadores. Em outras palavras, a quantia que cada vencedor apostou determina sua parcela do prêmio total, garantindo uma divisão justa e proporcional ao valor que ele contribuiu.
 </p>
-
 <p>
     Se um jogador A tiver apostado equivalente a 30% do valor arrecadado apenas pelo total de arrecadação de ganhadores, ele receberá 30% do ganho da premiação total, ou seja, a porcentagem da soma das apostas dos ganhadores e perdedores.
 </p>
@@ -341,8 +367,6 @@
     <p>Os demais jogadores não receberão.</p>
 </div>
 
-
-
 <div id="resultados">
     <h2>Resultados</h2>
     <div align="justify">
@@ -393,20 +417,18 @@
     </p>
     <p> 
     Para iniciar o servidor, insira o seguinte comando no terminal:
-
+<p>
 <code>go run servidor.go</code>
 Ao iniciar a execução, será exigida uma entrada, que será qual dos três servidores deseja iniciar. Após isso, o servidor estará funcionando e exibirá o log de debugs do Gin. Com isso, não será mais possível interagir diretamente com o servidor, apenas visualizar suas saídas.
-
 </p>
 <h3>Cliente</h3>
 <p>
 Para iniciar o cliente, insira o comando no terminal:
-
+</p>
 <code>go run cliente.go</code>
-Ao iniciar a execução, será solicitado que insira o endereço da conexão, seguindo-se para as etapas de cadastro e uso normal do sistema, tal como explicitado nos tópicos anteriores.
-
+Ao iniciar a execução, será solicitado que insira o endereço da conexão, seguindo-se para as etapas de cadastro e uso normal do sistema, tal como explicitado nos tópicos anteriores.</p>
+<p>
 O menu do cliente será exibido, permitindo que o usuário interaja com o sistema utilizando os números do teclado para selecionar as opções desejadas.
-
 </p>
     <h3>Com Docker</h3>
     <p>
@@ -415,29 +437,28 @@ O menu do cliente será exibido, permitindo que o usuário interaja com o sistem
     <h3>Servidor</h3>
     <p>
         Para utilizar os arquivos em contêiner é necessário primeiro criar a imagem docker.
-
+<p>
 Utilize o comando para gerar a imagem:
-
+</p>
+<p>
 <code>docker build -t server .</code>
 Para executar a imagem, roda a aplicação em container, utilize:
-
-<code>docker run -it -p 8088:8088 server</code>
-O código será executado e exibirá o endereço e porta, similar ao funcionamento sem docker, e os mesmo procedimentos deverão ser seguido
-
 </p>
+<p>
+<code>docker run -it -p 8088:8088 server</code>
+O código será executado e exibirá o endereço e porta, similar ao funcionamento sem docker, e os mesmo procedimentos deverão ser seguido<p>
     <h3>Cliente</h3>
     <p>
         Para iniciar o cliente, crie a imagem utilizando o comando a seguir:
-
+<p>
 <code>docker build -t client .</code>
 Para executar a imagem:
-
+</p>
+</p>
 <code>docker run -it --rm client</code>
 Logo após, será solicitado que você insira o endereço da conexão exatamente como foi informado pelo servidor, incluindo todos os pontos separadores.
-
-O menu do cliente será exibido, permitindo que o usuário interaja com o sistema utilizando os números do teclado para selecionar as opções desejadas.
-
-</p>
+<p>
+O menu do cliente será exibido, permitindo que o usuário interaja com o sistema utilizando os números do teclado para selecionar as opções desejadas.</p>
 </div>
 
 <div id="conclusao">
