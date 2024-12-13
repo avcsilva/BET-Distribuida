@@ -203,7 +203,47 @@
             Por utilizar do <em>framework</em> Gin, o sistema usufrui de funcionalidades tal como a de concorrência, que permite que múltiplas requisições sejam processadas simultaneamente, garantindo que o sistema possa lidar com diversos usuários conectados e requisições ao mesmo tempo. A concorrência é uma característica essencial para sistemas distribuídos, uma vez que a comunicação entre os componentes do sistema ocorre de forma assíncrona e não sequencial, permitindo que o servidor possa atender a múltiplas requisições de clientes simultaneamente.
         </p>
         <p>
-            Entretanto, fora as funcionalidades do Gin, não há, neste projeto, qualquer outro método para o tratamento de concorrência distribuída para casos de acessos a funções críticas entre os servidores. O sistema foi projetado para que cada servidor possua uma cópia dos registros de clientes e passagens, e que cada servidor possa atualizar os registros dos outros servidores quando necessário.
+            Entretanto, fora as funcionalidades do Gin, foi implementado para este projeto um modelo de comunicação baseada no protocolo token ring, que permite que os servidores possam se comunicar entre si de maneira ordenada e compartilhar informações sobre os clientes e eventos cadastrados. O protocolo token ring é um modelo de comunicação em que os servidores se comunicam de forma circular e ordenada, enviando e recebendo mensagens entre si e coordenando suas operações, garantindo que todas as informações estejam atualizadas em todos os servidores e que não haja operações concorrentes entre si ocorrendo de forma simultânea. Dessa forma, o protocolo token ring permite que os servidores possam realizar operações de forma segura e eficiente, garantindo a consistência dos dados e a integridade do sistema.
+        </p>
+        <p>
+            O protocolo token ring deste projeto foi implementado seguindo as seguintes regras:
+            <li>
+                No sistema em execução, haverá a presença de um único token que circulará entre os servidores, permitindo que cada servidor possa realizar operações de leitura e escrita de forma ordenada e segura.
+            </li>
+            <li>
+                Cada servidor, só poderá realizar operações de leitura e escrita de dados solicitadas por clientes quando estiver com posse do token, garantindo que não haja operações concorrentes entre os servidores.
+            </li>
+            <li>
+                Requisições realizadas por outros servidores, tal como solicitação de registros atuais ou atualização de algum dado de cliente ou evento deverão ser executadas mesmo sem a presença do token, pelo fato de ser apenas uma sincronização dos dados entre os servidores.
+            </li>
+            <li>
+                Um servidor manterá posse do token por um tempo mínimo, definido como 1 segundo, ou até que sua operação seja finalizada por completo. Tendo as duas condições satisfeitas, o token será passado para o próximo servidor na ordem de comunicação.
+            </li>
+            <li>
+                A ordem de comunicação entre os servidores é fixa e circular, sendo o servidor A o primeiro a receber o token, seguido pelo servidor B e, por fim, o servidor C, que por sua vez deverá reiniciar o ciclo passando o token novamente para o servidor A.
+                <ol type="a">
+                    <li>
+                        Caso um servidor esteja off-line, o token será passado para o próximo servidor na ordem de comunicação, garantindo que as operações possam ser realizadas mesmo com a falha de um dos servidores.
+                    </li>
+                    <li>
+                        Sempre que um servidor recebe o token, este envia para os outros servidores um sinal de confirmação de existência do token dentro do sistema. Este sinal será utilizado para verificar se o token está em circulação, explicado na regra seguinte.
+                    </li>
+                </ol>
+            </li>
+            <li>
+                Cada servidor fará uma verificação de existência de token em circulação sobre o sistema. Essa validação é feita verificando se houve detecção de um token pelo servidor ou de um sinal de existência de token dentro de um espaço de tempo de 3 segundos. Caso o tempo seja excedido e nenhuma das condições seja satisfeita, haverá a geração de um novo token.
+                <ol type="a">
+                    <li>
+                        Para evitar que haja uma possível geração de múltiplos tokens, foi adicionada uma contagem de tempo adicional para cada servidor, de forma que haja um espaço de tempo levemente maior para que o token seja detectado por outro servidor. Para isso, foi determinado que o servidor A espere por mais 0,1 segundo, o servidor B por mais 0,3 segundos e o servidor C por mais 0,6 segundos.
+                    </li>
+                    <li>
+                        Ao gerar o token, o servidor enviará o sinal de confirmação de existência do token para os outros servidores e o manterá, tal qual o padrão estabelecido (com um tempo mínimo e verificação de tarefa realizada), para seu próprio funcionamento.
+                    </li>
+                    <li>
+                        A verificação de existência de token é realizada constantemente e à todo momento de funcionamento do sistema, sendo útil tanto para o caso de inicialização do sistema (como para a geração do primeiro token) quanto para a manutenção do token em circulação (em caso de falha de um servidor que estivesse em posse do token).
+                    </li>
+                </ol>
+            </li>
         </p>
     </div>
 </div>
@@ -310,10 +350,13 @@ Para realizar uma compra, basta clicar no botão "COMPRAR" abaixo do nome da rot
     <h2>Resultados</h2>
     <div align="justify">
         <p>
-            Tendo sido testado em laboratório com uso de diversos computadores para simular a conexão simultânea de múltiplos clientes, foi possível averiguar que o sistema consegue lidar corretamente e de forma eficiente com as diversas requisições ocorrendo simultaneamente, não apresentando nenhum tipo de atraso ou travamento. Além disso, foi possível comprovar que cada servidor foi capaz de reconhecer corretamente cada cliente a partir de seu nome de usuário, sendo possível a recuperação dos dados e compras de cada usuário em qualquer um dos servidores.
+            Tendo sido testado em ambiente local com uso de diversos terminais em paralelo para simular a conexão simultânea dos 3 servidores e de múltiplos clientes, foi possível averiguar que o sistema consegue lidar corretamente e de forma eficiente com as diversas requisições ocorrendo simultaneamente, não apresentando nenhum tipo de atraso ou travamento. Além disso, foi possível comprovar que cada servidor foi capaz de reconhecer corretamente cada cliente a partir de seu nome de usuário, sendo possível a recuperação dos dados e eventos de cada usuário em qualquer um dos servidores.
         </p>
         <p>
             Da maneira como projeto foi concebido, um cliente que tenha sua conexão perdida não consegue reconhecer o erro relatado em tempo real, mantendo a execução do programa na etapa em que parou, até que se tente enviar alguma requisição. Somente após a tentativa de enviar algo, o programa reconhece a perda da conexão e exibe uma mensagem de erro, solicitando em seguida um endereço alvo para realizar uma nova conexão. Caso o cliente receba de volta sua conexão com a rede, como tendo seu cabo de rede posto de volta, após o servidor ter encerrado sua conexão, esta não será iniciada novamente de forma automática. O usuário do cliente deverá indicar novamente o endereço alvo para poder se reconectar ao servidor e recuperar seus dados.
+        </p>
+        <p>
+            Com os testes, foi possível comprovar o funcionamento da implementação do protocolo token ring, que permitiu que os servidores se comunicassem de forma ordenada e segura, garantindo a consistência dos dados e a integridade do sistema. O protocolo token ring foi capaz de coordenar as operações dos servidores de forma eficiente, garantindo que as operações de leitura e escrita de dados fossem realizadas de forma segura e sem conflitos, mesmo com a presença de múltiplos servidores e clientes conectados simultaneamente, além de realizar corretamente a passagem do token entre os servidores e a geração do mesmo dentro do sistema.
         </p>
         <p>
             Uma considerável porção do código fonte do projeto possui documentação sobre suas operações, indicando o que cada parte ou linha de código deve estar realizando para o funcionamento do sistema.
@@ -408,10 +451,10 @@ O menu do cliente será exibido, permitindo que o usuário interaja com o sistem
     <h2>Conclusão</h2>
     <div align="justify">
         <p>
-            De acordo com os resultados obtidos em testes em laboratório, é possível afirmar que o produto cumpre com o que se propõe inicialmente. Com a execução correta do servidor e do cliente, é possível realizar e cancelar compras de passagens mesmo que haja a presença de diversos usuários simultâneos, com o servidor encarregado de realizar todo o processamento, todos os servidores tendo seus registros atualizados após cada requisição e tratamento local de concorrência para o caso de requisições coincidentes de múltiplos usuários.
+            De acordo com os resultados obtidos nos testes, é possível afirmar que o produto cumpre com o que se propõe inicialmente. Com a execução correta do servidor e do cliente, é possível realizar a criação de eventos e aplicação de apostas sobre estes mesmo que haja a presença de diversos usuários simultâneos, sendo o servidor encarregado de realizar todo o processamento. Todos os servidores têm seus registros atualizados após cada requisição e há no sistema tratamento de concorrência para o caso de requisições coincidentes de múltiplos usuários.
         </p>
         <p>
-            Ainda é possível aprimorar o sistema, como implementando uma metodologia para tratamento de concorrência distribuída para o sistema como um todo. Porém, o projeto ainda consegue lidar adequadamente com suas outras propostas, sendo assim bem favorável para a sua utilização.
+            Ainda é possível aprimorar o sistema, como implementando uma interface mais amigável para o usuário cliente. Porém, o projeto ainda consegue lidar adequadamente com suas outras propostas, sendo assim bem favorável para a sua utilização.
         </p>
     </div>
 </div>
