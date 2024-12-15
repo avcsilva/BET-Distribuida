@@ -107,7 +107,6 @@ func existe_token(serv_local *Infos_local) {
                 token_exist = false
                 continue
             }
-            token = true
             fmt.Println("Token gerado servidor A.")
         } else if (serv_local.qual_serv == "B") { // Tempo de espera para cada servidor gerar um novo token
             time.Sleep(300 * time.Millisecond) // Servidor B espera 0,3 segundos para gerar um novo token
@@ -116,7 +115,6 @@ func existe_token(serv_local *Infos_local) {
                 token_exist = false
                 continue
             }
-            token = true
             fmt.Println("Token gerado servidor B.")
         } else if (serv_local.qual_serv == "C") { // Tempo de espera para cada servidor gerar um novo token
             time.Sleep(600 * time.Millisecond) // Servidor C espera 0,6 segundos para gerar um novo token
@@ -125,8 +123,14 @@ func existe_token(serv_local *Infos_local) {
                 token_exist = false
                 continue
             }
-            token = true
             fmt.Println("Token gerado servidor C.")
+        }
+        token = true // O servidor atual possui o token
+        // Envia confirmação de existência de token no sistema para o próximo servidor
+        for _, servidor := range serv_local.servidores { // O servidor atual tentará enviar a confirmação para os próximos servidores
+            if !(envia_req_token_exist(servidor)) { // Se a confirmação não for enviada com sucesso, o servidor atual tentará enviar para o próximo servidor
+                fmt.Printf("Erro ao enviar confirmação de existência de token para o servidor %s\n", servidor)
+            }
         }
     }
 }
