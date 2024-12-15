@@ -1,12 +1,43 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"runtime"
 	"time"
 )
+
+var id int = 0
+var url string //Ex.: "http://localhost:8080"
+
+type Evento struct {
+	id         		int
+	ativo      		bool
+	id_criador 		int
+	nome      		string
+	descricao		string
+	participantes 	map[int]float64  //id dos participantes e valor pago
+	palpite			map[int]string //id dos participantes e palpite
+	porcentagemCriador float64
+	resultado		string
+}
+
+type Cadastro_req struct {
+	Id int `json:"id"`
+	Nome string `json:"nome"`
+}
+
+type Cria_Evento_req struct {
+	Id int `json:"id"`
+	Id_event int `json:"id_event"`
+	Nome string `json:"nome"`
+	Descricao string `json:"descricao"`
+	PorcentagemCriador float64 `json:"porcentagemCriador"`
+}
 
 // Função para limpar o terminal
 func limpar_terminal() {
@@ -63,19 +94,63 @@ func displayMessageWithColors(message string, seconds int) {
 	}
 }
 
+func cadastrar(nome string) bool {
+	var cadastro = Cadastro_req{Nome: nome} // ID é gerado pelo servidor
+	json_valor, err := json.Marshal(cadastro) // Serializa o JSON
+	if err != nil {
+		fmt.Println("Erro ao serializar o JSON:", err)
+		return false
+	}
+
+	resposta, err := http.Post(url+"/cadastro", "application/json", bytes.NewBuffer(json_valor)) // Faz a requisição POST
+	if err != nil {
+		fmt.Println("Erro ao fazer a requisição POST:", err)
+		return false
+	}
+	defer resposta.Body.Close()
+
+	var resposta_map map[string]interface{} // Mapa para decodificar o JSON
+	if err := json.NewDecoder(resposta.Body).Decode(&resposta_map); err != nil { // Decodifica o JSON
+		fmt.Println("Erro ao decodificar o JSON:", err)
+		return false
+	}
+
+	id_receb, ok := resposta_map["id"].(float64) // Converte o ID para int
+	if !ok {
+		fmt.Println("Erro ao converter o ID")
+		return false
+	}
+
+	id = int(id_receb) // Atribui o ID recebido
+	return true
+}
+
+func criar_evento(nome string, descricao string, porcentagemCriador float64) bool {
+	var cria_evento = Cria_Evento_req{Id: id, Nome: nome, Descricao: descricao, PorcentagemCriador: porcentagemCriador}
+	json_valor, err := json.Marshal(cria_evento) // Serializa o JSON
+	if err != nil {
+		fmt.Println("Erro ao serializar o JSON:", err)
+		return false
+	}
+
+	resposta, err := http.Post(url+"/cria_evento", "application/json", bytes.NewBuffer(json_valor)) // Faz a requisição POST
+	if err != nil {
+		fmt.Println("Erro ao fazer a requisição POST:", err)
+		return false
+	}
+	defer resposta.Body.Close()
+
+	var resposta_map map[string]interface{} // Mapa para decodificar o JSON
+	if err := json.NewDecoder(resposta.Body).Decode(&resposta_map); err != nil { // Decodifica o JSON
+		fmt.Println("Erro ao decodificar o JSON:", err)
+		return false
+	}
+
+	return true
+}
+
 func main() {
 	limpar_terminal()
-	type Evento struct {
-		id         		int
-		ativo      		bool
-		id_criador 		int
-		nome      		string
-		descricao		string
-		participantes 	map[int]float64  //id dos participantes e valor pago
-		palpite			map[int]string //id dos participantes e palpite
-		porcentagemCriador float64
-		resultado		string
-	}
 
 	displayMessageWithColors("Bem vindo a melhor BET do cenario!!!", 2)
 

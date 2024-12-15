@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -24,6 +25,7 @@ var serv_lab_C string = "http://172.16.103.12:8080"
 
 // Variáveis para o uso de Token Ring
 var token bool = false // Variável para controle de token. Indica se o servidor possui ou não o token
+var token_exist bool = false // Variável para controle de existência de token no sistema. Indica se o token existe ou não no sistema
 var trava_token bool = false // Variável para controle de trava do token. Indica se o servidor deve ou não segurar o token
 var tarefa_ok bool = true // Variável para controle de tarefa. Indica se a tarefa do servidor foi concluída ou não
 
@@ -63,6 +65,21 @@ type Infos_local struct {
     eventos   map[int]Evento // Mapa de eventos baseado em seu ID (Ex.: {1: Evento1, 2: Evento2})
 }
 
+// Estrutura de dados para as requisições de cadastro de cliente
+type Cadastro_req struct {
+	Id int `json:"id"`
+	Nome string `json:"nome"`
+}
+
+// Estrutura de dados para as requisições de criação de evento
+type Cria_Evento_req struct {
+	Id int `json:"id"`
+    Id_event int `json:"id_event"`
+	Nome string `json:"nome"`
+	Descricao string `json:"descricao"`
+	PorcentagemCriador float64 `json:"porcentagemCriador"`
+}
+
 // Fim das estruturas de dados
 
 // Funções para o Token Ring
@@ -72,8 +89,10 @@ func existe_token(serv_local *Infos_local) {
         // Verifica se a variável token se torna verdadeira dentro de um tempo limite
         // Ou seja, verifica se há um token circulando pelo sistema em um período de 3 segundos
         for i := 0; i < 3; i++ {
-            if token { // Se houver token, o servidor atual não precisa gerar um novo
+            if (token || token_exist) { // Se houver token, o servidor atual não precisa gerar um novo
                 fmt.Println("Token encontrado.")
+                token_exist = false
+                i = 0
                 continue
             }
             // Conta 1 segundo
@@ -83,24 +102,27 @@ func existe_token(serv_local *Infos_local) {
 
         if (serv_local.qual_serv == "A") { // Tempo de espera para cada servidor gerar um novo token
             time.Sleep(100 * time.Millisecond) // Servidor A espera apenas 0,1 segundos para gerar um novo token
-            if token { // Se o token já foi gerado por outro servidor, o servidor atual não precisa gerar um novo
+            if (token || token_exist) { // Se o token já foi gerado por outro servidor, o servidor atual não precisa gerar um novo
                 fmt.Println("Token encontrado.")
+                token_exist = false
                 continue
             }
             token = true
             fmt.Println("Token gerado servidor A.")
         } else if (serv_local.qual_serv == "B") { // Tempo de espera para cada servidor gerar um novo token
             time.Sleep(300 * time.Millisecond) // Servidor B espera 0,3 segundos para gerar um novo token
-            if token { // Se o token já foi gerado por outro servidor, o servidor atual não precisa gerar um novo
+            if (token || token_exist) { // Se o token já foi gerado por outro servidor, o servidor atual não precisa gerar um novo
                 fmt.Println("Token encontrado.")
+                token_exist = false
                 continue
             }
             token = true
             fmt.Println("Token gerado servidor B.")
         } else if (serv_local.qual_serv == "C") { // Tempo de espera para cada servidor gerar um novo token
             time.Sleep(600 * time.Millisecond) // Servidor C espera 0,6 segundos para gerar um novo token
-            if token { // Se o token já foi gerado por outro servidor, o servidor atual não precisa gerar um novo
+            if (token || token_exist) { // Se o token já foi gerado por outro servidor, o servidor atual não precisa gerar um novo
                 fmt.Println("Token encontrado.")
+                token_exist = false
                 continue
             }
             token = true
@@ -112,6 +134,20 @@ func existe_token(serv_local *Infos_local) {
 // Função para enviar o token via HTTP para o próximo servidor
 func envia_req_token(servidor string) bool {
     resposta, erro := http.Post(servidor + "/token", "application/json", nil) // Envia requisição POST para o servidor
+    if erro != nil { // Se houver erro, retorna false
+        return false
+    }
+
+    if resposta.StatusCode == 200 { // Se a resposta for 200, retorna true
+        return true
+    } else {
+        return false
+    }
+}
+
+// Função para enviar a confirmção de existência de token via HTTP para o próximo servidor
+func envia_req_token_exist(servidor string) bool {
+    resposta, erro := http.Post(servidor + "/token_exist", "application/json", nil) // Envia requisição POST para o servidor
     if erro != nil { // Se houver erro, retorna false
         return false
     }
@@ -347,6 +383,12 @@ func atualiza_infos(serv_local *Infos_local) {
                 }
                 // Fim obtenção dos palpites dos participantes do evento
 
+                // Obtenção da porcentagem do criador
+                porcentagemCriador, ok := evento["porcentagemCriador"].(float64)
+                if !ok {
+                    fmt.Printf("Erro ao obter porcentagem do criador de evento do servidor %s\n", servidor)
+                }
+
                 // Obtenção do resultado do evento
                 resultado, ok := evento["resultado"].(string)
                 if !ok {
@@ -362,6 +404,7 @@ func atualiza_infos(serv_local *Infos_local) {
                     descricao: descricao,
                     participantes: participantes,
                     palpite: palpite,
+                    porcentagemCriador: porcentagemCriador,
                     resultado: resultado,
                 }
             }
@@ -521,6 +564,187 @@ func define_metodo_post(serv_local *Infos_local, serv *gin.Engine){
     serv.POST("/token", func(c *gin.Context){
         token = true // O servidor recebe o token
         c.JSON(http.StatusOK, gin.H{"message": "Token recebido com sucesso."}) // Retorna mensagem de sucesso
+
+        // Envia confirmação de existência de token no sistema para o próximo servidor
+        for _, servidor := range serv_local.servidores { // O servidor atual tentará enviar a confirmação para os próximos servidores
+            if !(envia_req_token_exist(servidor)) { // Se a confirmação não for enviada com sucesso, o servidor atual tentará enviar para o próximo servidor
+                fmt.Printf("Erro ao enviar confirmação de existência de token para o servidor %s\n", servidor)
+            }
+        }
+    })
+
+    // Método POST para confirmação de existência de token no sistema
+    serv.POST("/token_exist", func(c *gin.Context){
+        token_exist = true
+        c.JSON(http.StatusOK, gin.H{"message": "Token existente."})
+    })
+
+	// Método POST para cadastro de um cliente nos servidores
+	serv.POST("/cadastro", func(c *gin.Context) {
+		var cadastro Cadastro_req // Cria uma variável para armazenar o cadastro do cliente
+		if err := c.ShouldBindJSON(&cadastro); err != nil { // Faz o bind do JSON recebido para a variável de cadastro
+			fmt.Println("Erro ao fazer o bind JSON (/cadastro):", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		fonte := c.GetHeader("X-Source") // Verifica o cabeçalho X-Source para saber se veio de um servidor ou cliente
+		if fonte == "servidor"{ // Caso seja de um servidor, realizar apenas cadastro próprio do cliente
+			serv_local.clientes[cadastro.Id] = Cliente{
+				id: cadastro.Id,
+				nome: cadastro.Nome,
+                saldo: 0,
+                id_eventos_criados: []int{},
+                id_eventos_participados: []int{},
+			}
+			id_cont_cliente = cadastro.Id + 1
+			c.JSON(http.StatusOK, gin.H{"status": "cadastrado"})
+			return
+		}
+
+        for !token { // Enquanto o servidor não possuir o token, ele aguardará
+            time.Sleep(10 * time.Millisecond) // Adiciona uma pausa de  para evitar o uso de 100% da CPU
+        }
+
+        tarefa_ok = false // O servidor atual ainda não concluiu sua tarefa
+
+		//Verificando se o cliente já está cadastrado
+		for _, cliente := range serv_local.clientes{
+			if cliente.nome == cadastro.Nome{ // Caso o cliente já esteja cadastrado, responde com o ID do cliente
+				c.JSON(http.StatusOK, gin.H{"status": "logado", "id": cliente.id}) // Responde com o ID do cliente já cadastrado
+                tarefa_ok = true // O servidor atual concluiu sua tarefa
+				return
+			}
+		}
+
+		//Cadastrando o cliente localmente
+		serv_local.clientes[id_cont_cliente] = Cliente{
+			id: id_cont_cliente,
+			nome: cadastro.Nome,
+            saldo: 0,
+            id_eventos_criados: []int{},
+            id_eventos_participados: []int{},
+		}
+
+		// Enviando cadastro de cliente aos outros servidores
+		cadastro = Cadastro_req{ // Monta a estrutuda de dados para enviar os servidores
+			Id: id_cont_cliente,
+			Nome: cadastro.Nome,
+		}
+		json_valor, err := json.Marshal(cadastro) // Serializa o JSON para enviar aos servidores
+		if err != nil {
+			fmt.Println("Erro ao serializar o JSON (/cadastro):", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+            tarefa_ok = true // O servidor atual concluiu sua tarefa
+			return
+		}
+		for _, server := range serv_local.servidores { // Loop para acessar outros servidores
+			go func(server string) {
+				req, err := http.NewRequest("POST", server+"/cadastro", bytes.NewBuffer(json_valor)) // Cria uma requisição POST para o servidor
+				if err != nil {
+					fmt.Printf("Failed to create request to server %s: %v\n", server, err)
+					return
+				}
+				req.Header.Set("Content-Type", "application/json") // Adiciona o cabeçalho Content-Type para identificar que é um JSON
+				req.Header.Set("X-Source", "servidor") // Adiciona o cabeçalho X-Source para identificar que é uma requisição de servidor
+
+				client := &http.Client{} // Cria um cliente HTTP
+				resp, err := client.Do(req) // Envia a requisição
+				if err != nil {
+					fmt.Printf("Failed to send to server %s: %v\n", server, err)
+					return
+				}
+				defer resp.Body.Close()
+			}(server)
+		}
+		c.JSON(http.StatusOK, gin.H{"status": "cadastrado", "id": id_cont_cliente}) // Responde com o status de cadastrado e o ID do cliente
+		id_cont_cliente++ // Incrementa o contador de ID
+        tarefa_ok = true // O servidor atual concluiu sua tarefa
+	})
+
+    // Método POST para criação de um evento nos servidores
+    serv.POST("/cria_evento", func(c *gin.Context) {
+        var cria_evento Cria_Evento_req // Cria uma variável para armazenar a criação do evento
+        if err := c.ShouldBindJSON(&cria_evento); err != nil { // Faz o bind do JSON recebido para a variável de criação do evento
+            fmt.Println("Erro ao fazer o bind JSON (/cria_evento):", err)
+            c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+            return
+        }
+
+        fonte := c.GetHeader("X-Source") // Verifica o cabeçalho X-Source para saber se veio de um servidor ou cliente
+        if fonte == "servidor"{ // Caso seja de um servidor, realizar apenas a criação própria do evento
+            serv_local.eventos[cria_evento.Id_event] = Evento{
+                id: cria_evento.Id_event,
+                ativo: true,
+                id_criador: cria_evento.Id,
+                nome: cria_evento.Nome,
+                descricao: cria_evento.Descricao,
+                participantes: make(map[int]float64),
+                palpite: make(map[int]string),
+                porcentagemCriador: cria_evento.PorcentagemCriador,
+                resultado: "",
+            }
+            id_cont_evento = cria_evento.Id_event + 1
+            c.JSON(http.StatusOK, gin.H{"status": "criado"})
+            return
+        }
+
+        for !token { // Enquanto o servidor não possuir o token, ele aguardará
+            time.Sleep(10 * time.Millisecond) // Adiciona uma pausa de 10ms para evitar o uso de 100% da CPU
+        }
+
+        tarefa_ok = false // O servidor atual ainda não concluiu sua tarefa
+
+        // Cadastrando o evento localmente
+        serv_local.eventos[id_cont_evento] = Evento{
+            id: id_cont_evento,
+            ativo: true,
+            id_criador: cria_evento.Id,
+            nome: cria_evento.Nome,
+            descricao: cria_evento.Descricao,
+            participantes: make(map[int]float64),
+            palpite: make(map[int]string),
+            porcentagemCriador: cria_evento.PorcentagemCriador,
+            resultado: "",
+        }
+
+        // Enviando criação de evento aos outros servidores
+        cria_evento = Cria_Evento_req{ // Monta a estrutuda de dados para enviar os servidores
+            Id: cria_evento.Id,
+            Id_event: id_cont_evento,
+            Nome: cria_evento.Nome,
+            Descricao: cria_evento.Descricao,
+            PorcentagemCriador: cria_evento.PorcentagemCriador,
+        }
+        json_valor, err := json.Marshal(cria_evento) // Serializa o JSON para enviar aos servidores
+        if err != nil {
+            fmt.Println("Erro ao serializar o JSON (/cria_evento):", err)
+            c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+            tarefa_ok = true // O servidor atual concluiu sua tarefa
+            return
+        }
+        for _, server := range serv_local.servidores { // Loop para acessar outros servidores
+            go func(server string) {
+                req, err := http.NewRequest("POST", server+"/cria_evento", bytes.NewBuffer(json_valor)) // Cria uma requisição POST para o servidor
+                if err != nil {
+                    fmt.Printf("Failed to create request to server %s: %v\n", server, err)
+                    return
+                }
+                req.Header.Set("Content-Type", "application/json") // Adiciona o cabeçalho Content-Type para identificar que é um JSON
+                req.Header.Set("X-Source", "servidor") // Adiciona o cabeçalho X-Source para identificar que é uma requisição de servidor
+
+                client := &http.Client{} // Cria um cliente HTTP
+                resp, err := client.Do(req) // Envia a requisição
+                if err != nil {
+                    fmt.Printf("Failed to send to server %s: %v\n", server, err)
+                    return
+                }
+                defer resp.Body.Close()
+            }(server)
+        }
+        c.JSON(http.StatusOK, gin.H{"status": "criado", "id": id_cont_evento}) // Responde com o status de criado e o ID do evento
+        id_cont_evento++ // Incrementa o contador de ID
+        tarefa_ok = true // O servidor atual concluiu sua tarefa
     })
 }
 
