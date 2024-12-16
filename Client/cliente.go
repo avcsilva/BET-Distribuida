@@ -179,6 +179,12 @@ func limpar_buffer() {
 	reader.ReadString('\n') // Lê o restante da entrada e descarta
 }
 
+// Função para validar a URL do servidor
+func validarURL(url string) bool {
+    _, err := http.Get(url + "/infos")
+    return err == nil
+}
+
 func main() {
 	reader := bufio.NewReader(os.Stdin)
 	//var nome string
@@ -188,9 +194,19 @@ func main() {
 	displayMessageWithColors("Bem vindo a melhor BET do cenario!!!", 2)
 
 	// Entrada do endereço do servidor
-	fmt.Println("Digite o endereço do servidor: ")
-	url, _ = reader.ReadString('\n')
-	url = strings.TrimSpace(url)
+	limpar_terminal()
+    for {
+		
+        fmt.Println("Digite o endereço do servidor: ")
+        url, _ = reader.ReadString('\n')
+        url = strings.TrimSpace(url)
+        if validarURL(url) {
+            break
+        } else {
+			limpar_terminal()
+            fmt.Println("\033[31mNão foi possível conectar ao servidor. Tente novamente.\033[0m")
+        }
+    }
 	limpar_terminal()
 
 	// Entrada do nome de acesso
