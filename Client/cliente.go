@@ -181,8 +181,8 @@ func limpar_buffer() {
 
 // Função para validar a URL do servidor
 func validarURL(url string) bool {
-    _, err := http.Get(url + "/infos")
-    return err == nil
+	_, err := http.Get(url + "/infos")
+	return err == nil
 }
 
 func main() {
@@ -195,18 +195,18 @@ func main() {
 
 	// Entrada do endereço do servidor
 	limpar_terminal()
-    for {
-		
-        fmt.Println("Digite o endereço do servidor: ")
-        url, _ = reader.ReadString('\n')
-        url = strings.TrimSpace(url)
-        if validarURL(url) {
-            break
-        } else {
+	for {
+
+		fmt.Println("Digite o endereço do servidor: ")
+		url, _ = reader.ReadString('\n')
+		url = strings.TrimSpace(url)
+		if validarURL(url) {
+			break
+		} else {
 			limpar_terminal()
-            fmt.Println("\033[31mNão foi possível conectar ao servidor. Tente novamente.\033[0m")
-        }
-    }
+			fmt.Println("\033[31mNão foi possível conectar ao servidor. Tente novamente.\033[0m")
+		}
+	}
 	limpar_terminal()
 
 	// Entrada do nome de acesso
@@ -231,10 +231,11 @@ func main() {
 		fmt.Println("2 - Criar um evento")
 		fmt.Println("3 - Ver eventos [Participados]")
 		fmt.Println("4 - Ver eventos [Criados]")
-		fmt.Println("5 - Depositar")
-		fmt.Println("6 - Sacar")
+		fmt.Println("5 - Enviar resultado de um evento")
+		fmt.Println("6 - Depositar")
+		fmt.Println("7 - Sacar")
 		fmt.Println("0 - Encerrar sessão")
-		
+
 		// Leitura da seleção
 		fmt.Println("Escolha uma opção: ")
 		selecao, _ := reader.ReadString('\n')
@@ -258,12 +259,10 @@ func main() {
 			nome, _ := reader.ReadString('\n')
 			nome = strings.TrimSpace(nome) // Remove espaços em branco e \n
 
-
 			// Leitura da descrição
 			fmt.Println("Defina a descrição do evento: ")
 			descricao, _ := reader.ReadString('\n')
 			descricao = strings.TrimSpace(descricao) // Remove espaços em branco e \n
-
 
 			// Leitura da porcentagem
 			var porcentagemCriador float64
@@ -313,12 +312,26 @@ func main() {
 			//desativado - opcoes volta e detalhe (NAO PODE EDITAR NADA)
 			//ativo - opcoes voltar, informar vencedor (isso poes como evento finalizado) (NADA MAIS PODE SER ALTERADO)
 
-		} else if selecao == "5" { //Depositar
+		} else if selecao == "5" { //Enviar resultado de um evento
+			limpar_terminal()
+			// ver eventos ativos()
+			// Seleção do evento
+			fmt.Println("Escolha qual evento deseja informar o resultado: ")
+			eventoID, _ := reader.ReadString('\n')
+			eventoID = strings.TrimSpace(eventoID)
+
+			// Resultado do evento
+			fmt.Println("Digite o resultado do evento (Isso Encerrar o evento automaticamente): ")
+			resultado, _ := reader.ReadString('\n')
+			resultado = strings.TrimSpace(resultado)
+			//alterarResultado(eventoID, resultado)
+
+		} else if selecao == "6" { //Depositar
 			limpar_terminal()
 			//solicitar valor
 			//encaminhar para o servidor
 			//receber confirmação
-		} else if selecao == "6" { //Sacar
+		} else if selecao == "7" { //Sacar
 			limpar_terminal()
 			//solicitar valor
 			//encaminhar para o servidor
