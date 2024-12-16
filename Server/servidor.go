@@ -90,9 +90,8 @@ func existe_token(serv_local *Infos_local) {
         // Ou seja, verifica se há um token circulando pelo sistema em um período de 3 segundos
         for i := 0; i < 3; i++ {
             if (token || token_exist) { // Se houver token, o servidor atual não precisa gerar um novo
-                fmt.Println("Token encontrado.")
                 token_exist = false
-                i = 0
+                i = -1
                 continue
             }
             // Conta 1 segundo
