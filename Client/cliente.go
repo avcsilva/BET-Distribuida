@@ -725,8 +725,9 @@ func main() {
 					fmt.Printf("Erro: valor inválido. O valor deve ser maior que 0 e menor ou igual ao saldo atual (%.2f).\n", saldoAtual)
 					continue // Volta ao início do loop
 				}
-
+				if saldo <= saldoAtual && saldo > 0 {
 				alterar_saldo(-saldo)
+				}
 				limpar_terminal()
 				saldoAtual, err := obter_saldo()
 				if err != nil {
