@@ -196,6 +196,49 @@ func criar_evento(nome string, descricao string, porcentagemCriador float64) boo
 	return true
 }
 
+func participarDoEvento(eventoID int, clienteID int, palpite string, valorAposta float64) bool {
+	var dados = struct {
+		EventoID    int     `json:"eventoID"`
+		ClienteID   int     `json:"clienteID"`
+		Palpite     string  `json:"palpite"`
+		ValorAposta float64 `json:"valorAposta"`
+	}{
+		EventoID:    eventoID,
+		ClienteID:   clienteID,
+		Palpite:     palpite,
+		ValorAposta: valorAposta,
+	}
+
+	json_valor, err := json.Marshal(dados) // Serializa o JSON
+	if err != nil {
+		fmt.Println("Erro ao serializar o JSON:", err)
+		return false
+	}
+	fmt.Println("Serializado: sucesso")
+
+	req, err := http.NewRequest(http.MethodPost, url+"/participar_evento", bytes.NewBuffer(json_valor)) // Cria uma requisição POST
+	if err != nil {
+		fmt.Println("Erro ao criar a requisição POST:", err)
+		return false
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resposta, err := client.Do(req) // Envia a requisição POST
+	if err != nil {
+		fmt.Println("Erro ao enviar a requisição:", err)
+		return false
+	}
+	defer resposta.Body.Close()
+
+	if resposta.StatusCode == http.StatusOK {
+		fmt.Println("Aposta realizada com sucesso!")
+		return true
+	} else {
+		fmt.Println("Erro ao realizar aposta. Status:", resposta.Status)
+		return false
+	}
+}
 func alterar_saldo(saldo float64) bool {
 	var alterar_saldo = Saldo_req{Id: id, Saldo: saldo}
 	json_valor, err := json.Marshal(alterar_saldo) // Serializa o JSON
@@ -374,6 +417,57 @@ func main() {
 				for id, evento := range eventos {
 					fmt.Printf("ID: %d \nNome: %s \nDescrição: %s\n", id, evento.Nome, evento.Descricao)
 					fmt.Println("--------------------------------------------------")
+				}
+				var eventoID int
+				for {
+					fmt.Println("Digite o ID do evento que deseja participar: ")
+					input, _ := reader.ReadString('\n')
+					input = strings.TrimSpace(input)
+					eventoID, err := strconv.Atoi(input)
+
+					if err != nil {
+						fmt.Println("ID do evento inválido. Tente novamente.")
+						continue
+					}
+					if evento, exists := eventos[eventoID]; exists {
+						limpar_terminal()
+						fmt.Printf("Evento selecionado:\n")
+						fmt.Printf("id: %d\n", eventoID)
+						fmt.Printf("Nome: %s\n", evento.Nome)
+						fmt.Printf("Descrição: %s\n", evento.Descricao)
+						fmt.Println("--------------------------------------------------")
+						break
+					} else {
+						fmt.Println("ID do evento inválido. Tente novamente.")
+					}
+				}
+				var palpite string
+				var valorAposta float64
+				fmt.Println("Digite seu palpite: ")
+				palpite, _ = reader.ReadString('\n')
+				palpite = strings.TrimSpace(palpite)
+				for {
+					saldoAtual, err := obter_saldo()
+					if err != nil {
+						fmt.Println("Erro ao obter o saldo atual:", err)
+						continue
+					}
+					fmt.Printf("Seu saldo atual é: %.2f\n", saldoAtual)
+					fmt.Println("Digite o valor da aposta: ")
+					input, _ := reader.ReadString('\n')
+					input = strings.TrimSpace(input)
+					valorAposta, err := strconv.ParseFloat(input, 64)
+
+					if err != nil || valorAposta <= 0 || valorAposta > saldoAtual {
+						fmt.Println("Valor da aposta inválido. Deve ser maior que zero e menor ou igual ao seu saldo atual.")
+						continue
+					}
+					break
+				}
+				if participarDoEvento(eventoID, id, palpite, valorAposta) {
+					fmt.Println("Aposta realizada com sucesso!")
+				} else {
+					fmt.Println("Erro ao realizar aposta.")
 				}
 			}
 			fmt.Println("Pressione Enter para voltar ao menu.")
