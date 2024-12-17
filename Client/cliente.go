@@ -437,8 +437,7 @@ func main() {
 	obtSaldo,_ := obter_saldo()
     if obtSaldo == 0 {
 		fmt.Println("Você não pode participar de eventos sem saldo")
-	}
-	if len(eventos) == 0 {
+	}else if len(eventos) == 0 {
         fmt.Println("Não há eventos ativos no momento.")
     } else {
         var eventoID int
