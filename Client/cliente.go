@@ -321,39 +321,45 @@ func eventos_cliente() map[string]interface{} {
 }
 
 func alterarResultado(eventoID int, resultado string) bool {
-	var dados = Altera_Resultado_req{Id_evento: eventoID, Id_cliente: id, Resultado: resultado}
+    var dados = Altera_Resultado_req{Id_evento: eventoID, Id_cliente: id, Resultado: resultado}
 
-	json_valor, err := json.Marshal(dados) // Serializa o JSON
-	if err != nil {
-		fmt.Println("Erro ao serializar o JSON:", err)
-		return false
-	}
-	fmt.Println("Serializado: sucesso")
+    json_valor, err := json.Marshal(dados) // Serializa o JSON
+    if err != nil {
+        fmt.Println("Erro ao serializar o JSON:", err)
+        return false
+    }
+    fmt.Println("Serializado: sucesso")
 
-	req, err := http.NewRequest(http.MethodPatch, url+"/altera_resultado", bytes.NewBuffer(json_valor)) // Cria uma requisição PATCH
-	if err != nil {
-		fmt.Println("Erro ao criar a requisição PATCH:", err)
-		return false
-	}
-	req.Header.Set("Content-Type", "application/json")
+    req, err := http.NewRequest(http.MethodPatch, url+"/altera_resultado", bytes.NewBuffer(json_valor)) // Cria uma requisição PATCH
+    if err != nil {
+        fmt.Println("Erro ao criar a requisição PATCH:", err)
+        return false
+    }
+    req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
-	resposta, err := client.Do(req) // Envia a requisição PATCH
-	if err != nil {
-		fmt.Println("Erro ao fazer a requisição PATCH:", err)
-		return false
-	}
-	fmt.Println("PATCH: sucesso")
-	defer resposta.Body.Close()
+    client := &http.Client{}
+    resposta, err := client.Do(req) // Envia a requisição PATCH
+    if err != nil {
+        fmt.Println("Erro ao fazer a requisição PATCH:", err)
+        return false
+    }
+    fmt.Println("PATCH: sucesso")
+    defer resposta.Body.Close()
 
-	var resposta_map map[string]interface{}                                      // Mapa para decodificar o JSON
-	if err := json.NewDecoder(resposta.Body).Decode(&resposta_map); err != nil { // Decodifica o JSON
-		fmt.Println("Erro ao decodificar o JSON:", err)
-		return false
-	}
-	fmt.Println("Decodificado: sucesso")
+    var resposta_map map[string]interface{}                                      // Mapa para decodificar o JSON
+    if err := json.NewDecoder(resposta.Body).Decode(&resposta_map); err != nil { // Decodifica o JSON
+        fmt.Println("Erro ao decodificar o JSON:", err)
+        return false
+    }
+    fmt.Println("Decodificado: sucesso")
 
-	return true
+    status, ok := resposta_map["status"].(string)
+    if !ok || status != "alterado" {
+        fmt.Println("Erro ao alterar o resultado.")
+        return false
+    }
+
+    return true
 }
 
 func limpar_buffer() {
@@ -426,79 +432,79 @@ func main() {
 
 		if selecao == "1" { //Participar de um evento
 			limpar_terminal()
-    eventos := eventos_ativos()
-    if len(eventos) == 0 {
-        fmt.Println("Não há eventos ativos no momento.")
-    } else {
-        var eventoID int
-        fmt.Println("Eventos ativos:")
-        fmt.Println("--------------------------------------------------")
-        for id, evento := range eventos {
-            fmt.Printf("ID: %d \nNome: %s \nDescrição: %s\n", id, evento.Nome, evento.Descricao)
-            fmt.Println("--------------------------------------------------")
-        }
+			eventos := eventos_ativos()
+			if len(eventos) == 0 {
+				fmt.Println("Não há eventos ativos no momento.")
+			} else {
+				var eventoID int
+				fmt.Println("Eventos ativos:")
+				fmt.Println("--------------------------------------------------")
+				for id, evento := range eventos {
+					fmt.Printf("ID: %d \nNome: %s \nDescrição: %s\n", id, evento.Nome, evento.Descricao)
+					fmt.Println("--------------------------------------------------")
+				}
 
-        for {
-            fmt.Println("Digite o ID do evento que deseja participar: ")
-            input, _ := reader.ReadString('\n')
-            input = strings.TrimSpace(input)
-            tempEventoID, err := strconv.Atoi(input)
+				for {
+					fmt.Println("Digite o ID do evento que deseja participar: ")
+					input, _ := reader.ReadString('\n')
+					input = strings.TrimSpace(input)
+					tempEventoID, err := strconv.Atoi(input)
 
-            if err != nil {
-                fmt.Println("ID do evento inválido. Tente novamente.")
-                continue
-            }
+					if err != nil {
+						fmt.Println("ID do evento inválido. Tente novamente.")
+						continue
+					}
 
-            if evento, exists := eventos[tempEventoID]; exists {
-                eventoID = tempEventoID
-                limpar_terminal()
-                fmt.Printf("Evento selecionado:\n")
-                fmt.Printf("id: %d\n", eventoID)
-                fmt.Printf("Nome: %s\n", evento.Nome)
-                fmt.Printf("Descrição: %s\n", evento.Descricao)
-                fmt.Println("--------------------------------------------------")
-                break
-            } else {
-                fmt.Println("ID do evento inválido. Tente novamente.")
-            }
-        }
+					if evento, exists := eventos[tempEventoID]; exists {
+						eventoID = tempEventoID
+						limpar_terminal()
+						fmt.Printf("Evento selecionado:\n")
+						fmt.Printf("id: %d\n", eventoID)
+						fmt.Printf("Nome: %s\n", evento.Nome)
+						fmt.Printf("Descrição: %s\n", evento.Descricao)
+						fmt.Println("--------------------------------------------------")
+						break
+					} else {
+						fmt.Println("ID do evento inválido. Tente novamente.")
+					}
+				}
 
-        fmt.Println("antes do palpite eventoID:", eventoID)
-        var palpite string
-        var valorAposta float64
-        fmt.Println("Digite seu palpite: ")
-        palpite, _ = reader.ReadString('\n')
-        palpite = strings.TrimSpace(palpite)
+				fmt.Println("antes do palpite eventoID:", eventoID)
+				var palpite string
+				var valorAposta float64
+				fmt.Println("Digite seu palpite: ")
+				palpite, _ = reader.ReadString('\n')
+				palpite = strings.TrimSpace(palpite)
 
-        for {
-            saldoAtual, err := obter_saldo()
-            if err != nil {
-                fmt.Println("Erro ao obter o saldo atual:", err)
-                continue
-            }
-            fmt.Printf("Seu saldo atual é: %.2f\n", saldoAtual)
-            fmt.Println("Digite o valor da aposta: ")
-            input, _ := reader.ReadString('\n')
-            input = strings.TrimSpace(input)
-            valorAposta, err := strconv.ParseFloat(input, 64)
+				for {
+					saldoAtual, err := obter_saldo()
+					if err != nil {
+						fmt.Println("Erro ao obter o saldo atual:", err)
+						continue
+					}
+					fmt.Printf("Seu saldo atual é: %.2f\n", saldoAtual)
+					fmt.Println("Digite o valor da aposta: ")
+					input, _ := reader.ReadString('\n')
+					input = strings.TrimSpace(input)
+					valorAposta, err := strconv.ParseFloat(input, 64)
 
-            if err != nil || valorAposta <= 0 || valorAposta > saldoAtual {
-                fmt.Println("Valor da aposta inválido. Deve ser maior que zero e menor ou igual ao seu saldo atual.")
-                continue
-            }
-            break
-        }
-        fmt.Println("eventoID:", eventoID)
-        fmt.Println("palpite:", palpite)
-        fmt.Println("valorAposta:", valorAposta)
-        if participarDoEvento(eventoID, palpite, valorAposta) {
-            fmt.Println("Aposta realizada com sucesso!")
-        } else {
-            fmt.Println("Erro ao realizar aposta.")
-        }
-    }
-    fmt.Println("Pressione Enter para voltar ao menu.")
-    reader.ReadString('\n')
+					if err != nil || valorAposta <= 0 || valorAposta > saldoAtual {
+						fmt.Println("Valor da aposta inválido. Deve ser maior que zero e menor ou igual ao seu saldo atual.")
+						continue
+					}
+					break
+				}
+				fmt.Println("eventoID:", eventoID)
+				fmt.Println("palpite:", palpite)
+				fmt.Println("valorAposta:", valorAposta)
+				if participarDoEvento(eventoID, palpite, valorAposta) {
+					fmt.Println("Aposta realizada com sucesso!")
+				} else {
+					fmt.Println("Erro ao realizar aposta.")
+				}
+			}
+			fmt.Println("Pressione Enter para voltar ao menu.")
+			reader.ReadString('\n')
 		} else if selecao == "2" { //Criar um envento
 			limpar_terminal()
 
@@ -583,22 +589,57 @@ func main() {
 
 		} else if selecao == "5" { //Enviar resultado de um evento
 			limpar_terminal()
-			// ver eventos ativos()
-			// Seleção do evento
-			fmt.Println("Escolha qual evento deseja informar o resultado: ")
-			input, _ := reader.ReadString('\n')
-			input = strings.TrimSpace(input)
-			eventoID, err := strconv.Atoi(input)
-			if err != nil {
-				fmt.Println("ID do evento inválido. Tente novamente.")
-				continue
-			}
+    eventos := eventos_ativos()
+    if len(eventos) == 0 {
+        fmt.Println("Não há eventos ativos no momento.")
+    } else {
+        var eventoID int
+        fmt.Println("Eventos ativos:")
+        fmt.Println("--------------------------------------------------")
+        for id, evento := range eventos {
+            fmt.Printf("ID: %d \nNome: %s \nDescrição: %s\n", id, evento.Nome, evento.Descricao)
+            fmt.Println("--------------------------------------------------")
+        }
 
-			// Resultado do evento
-			fmt.Println("Digite o resultado do evento (Isso Encerrar o evento automaticamente): ")
-			resultado, _ := reader.ReadString('\n')
-			resultado = strings.TrimSpace(resultado)
-			alterarResultado(eventoID, resultado)
+        for {
+            fmt.Println("Digite o ID do evento que deseja alterar o resultado: ")
+            input, _ := reader.ReadString('\n')
+            input = strings.TrimSpace(input)
+            tempEventoID, err := strconv.Atoi(input)
+
+            if err != nil {
+                fmt.Println("ID do evento inválido. Tente novamente.")
+                continue
+            }
+
+            if evento, exists := eventos[tempEventoID]; exists {
+                eventoID = tempEventoID
+                limpar_terminal()
+                fmt.Printf("Evento selecionado:\n")
+                fmt.Printf("id: %d\n", eventoID)
+                fmt.Printf("Nome: %s\n", evento.Nome)
+                fmt.Printf("Descrição: %s\n", evento.Descricao)
+                fmt.Println("--------------------------------------------------")
+                break
+            } else {
+                fmt.Println("ID do evento inválido. Tente novamente.")
+            }
+        }
+
+        fmt.Println("Digite o resultado do evento: ")
+        resultado, _ := reader.ReadString('\n')
+        resultado = strings.TrimSpace(resultado)
+
+        fmt.Println("eventoID:", eventoID)
+        fmt.Println("resultado:", resultado)
+        if alterarResultado(eventoID, resultado) {
+            fmt.Println("Resultado alterado com sucesso!")
+        } else {
+            fmt.Println("Erro ao alterar o resultado.")
+        }
+    }
+    fmt.Println("Pressione Enter para voltar ao menu.")
+    reader.ReadString('\n')
 
 		} else if selecao == "6" { //Depositar
 			limpar_terminal()
@@ -643,7 +684,7 @@ func main() {
 					fmt.Println("Erro ao obter o saldo atual:", err)
 					continue
 				}
-				fmt.Printf("\033[32mO valor do saque é: %.2f\033[0m\n\033[34mSeu saldo atual é: %.2f\n\033[0m\n", saldo, saldoAtual)
+				fmt.Printf("\033[32mO valor do deposito é: %.2f\033[0m\n\033[34mSeu saldo atual é: %.2f\n\033[0m\n", saldo, saldoAtual)
 			}
 
 		} else if selecao == "7" { //Sacar
