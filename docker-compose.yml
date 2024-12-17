@@ -1,0 +1,24 @@
+version: "3.8"
+
+services:
+  servidor:
+    build:
+      context: ./Server
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    networks:
+      - bet-network
+
+  cliente:
+    build:
+      context: ./Client
+      dockerfile: Dockerfile
+    depends_on:
+      - servidor
+    networks:
+      - bet-network
+
+networks:
+  bet-network:
+    driver: bridge
