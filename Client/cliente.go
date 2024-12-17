@@ -17,16 +17,27 @@ import (
 var id int = 0
 var url string //Ex.: "http://localhost:8080"
 
-type Evento struct {
-	id                 int
-	ativo              bool
-	id_criador         int
-	nome               string
-	descricao          string
-	participantes      map[int]float64 //id dos participantes e valor pago
-	palpite            map[int]string  //id dos participantes e palpite
-	porcentagemCriador float64
-	resultado          string
+// Estrutura de dados para o Evento ativo
+type Evento_ativo struct {
+	nome 			 string          // Nome do evento
+	descricao 		 string          // Descrição do evento
+}
+
+// Estrutura de dados para o Evento criado
+type Evento_criado struct {
+	ativo              bool            // Status do evento (ativo ou inativo)
+	nome               string          // Nome do evento
+	descricao          string          // Descrição do evento
+	porcentagemCriador float64         // Porcentagem que o criador irá receber
+	resultado          string          // Resultado do evento
+}
+
+// Estrutura de dados para o Evento participado
+type Evento_participado struct {
+	ativo              bool            // Status do evento (ativo ou inativo)
+	nome               string          // Nome do evento
+	descricao          string          // Descrição do evento
+	resultado          string          // Resultado do evento
 }
 
 type Cadastro_req struct {
@@ -243,6 +254,57 @@ func obter_saldo() (float64, error) {
 	return saldo, nil
 }
 
+func eventos_ativos() map[int]Evento_ativo {
+	resposta, err := http.Get(url + "/eventos_ativos")
+	if err != nil {
+		fmt.Println("Erro ao fazer a requisição GET:", err)
+		return nil
+	}
+	defer resposta.Body.Close()
+
+	var eventos_ativos map[int]Evento_ativo
+	if err := json.NewDecoder(resposta.Body).Decode(&eventos_ativos); err != nil {
+		fmt.Println("Erro ao decodificar o JSON:", err)
+		return nil
+	}
+	return eventos_ativos
+}
+
+// Função para receber todos os eventos relacionados ao cliente, tanto criados quanto participados
+func eventos_cliente() map[string]interface{} {
+	resposta, err := http.Get(fmt.Sprintf("%s/eventos_cliente?id=%d", url, id)) // Faz a requisição GET com parâmetro de id
+	if err != nil {
+		fmt.Println("Erro ao fazer a requisição GET:", err)
+		return nil
+	}
+	defer resposta.Body.Close()
+
+	var eventos_cliente_interface map[string]interface{}
+	if err := json.NewDecoder(resposta.Body).Decode(&eventos_cliente_interface); err != nil {
+		fmt.Println("Erro ao decodificar o JSON:", err)
+		return nil
+	}
+
+	eventos_criados, ok := eventos_cliente_interface["eventos_criados"].(Evento_criado)
+	if !ok {
+		fmt.Println("Erro ao converter eventos criados")
+		return nil
+	}
+
+	eventos_participados, ok := eventos_cliente_interface["eventos_participados"].(Evento_participado)
+	if !ok {
+		fmt.Println("Erro ao converter eventos participados")
+		return nil
+	}
+
+	eventos_cliente := map[string]interface{}{
+		"eventos_criados":     eventos_criados,
+		"eventos_participados": eventos_participados,
+	}
+
+	return eventos_cliente
+}
+
 func limpar_buffer() {
 	// Limpa o buffer pendente
 	reader := bufio.NewReader(os.Stdin)
@@ -351,21 +413,6 @@ func main() {
 			criar_evento(nome, descricao, porcentagemCriador)
 			time.Sleep(3 * time.Second)
 
-			// atribuido valores
-			criar := Evento{
-				id:                 0,
-				ativo:              true,
-				id_criador:         0,
-				nome:               nome,
-				descricao:          descricao,
-				participantes:      nil,
-				palpite:            nil,
-				porcentagemCriador: 0,
-				resultado:          "",
-			}
-
-			//encaminhar infomaçoes para o servidor
-			fmt.Println(criar) //para não gerar erro
 		} else if selecao == "3" { //Ver evetos [Participados]
 			limpar_terminal()
 			//exibir lista de envento que o usuario participa ou participou

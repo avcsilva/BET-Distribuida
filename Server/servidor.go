@@ -564,6 +564,67 @@ func define_metodo_get(serv_local *Infos_local, serv *gin.Engine) {
 
 		c.JSON(http.StatusOK, infos) // Retorna as informações armazenadas pelo servidor
 	})
+
+	// Método GET para retornar eventos ativos
+	serv.GET("/eventos_ativos", func(c *gin.Context) {
+		// Criação de estrutura para armazenar os eventos ativos
+		eventos_ativos := make(map[int]map[string]string)
+		for id, evento := range serv_local.eventos {
+			if evento.ativo { // Verifica se o evento está ativo
+				eventos_ativos[id] = map[string]string{
+					"nome":          evento.nome,
+					"descricao":     evento.descricao,
+				}
+			}
+		}
+
+		c.JSON(http.StatusOK, eventos_ativos) // Retorna os eventos ativos
+	})
+
+	// Método GET para retornar eventos relacionados a um cliente, tanto criados quanto participados
+	serv.GET("/eventos_cliente", func(c *gin.Context) {
+		cliente_id := c.Query("id") // Obtém o ID do cliente
+		id, erro := strconv.Atoi(cliente_id)
+		if erro != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido."})
+			return
+		}
+
+		// Criação de estrutura para armazenar os eventos relacionados ao cliente
+		eventos_criados := make(map[int]map[string]interface{})
+		eventos_participados := make(map[int]map[string]interface{})
+
+		for _, evento := range serv_local.eventos {
+			if evento.id_criador == id { // Verifica se o cliente é o criador do evento
+				eventos_criados[evento.id] = map[string]interface{}{
+					"ativo":     evento.ativo,
+					"nome":      evento.nome,
+					"descricao": evento.descricao,
+					"porcentagemCriador": evento.porcentagemCriador,
+					"resultado": evento.resultado,
+				}
+				continue // Se o cliente é o criador, não é necessário verificar se ele é um participante
+			}
+			for id_part, _ := range evento.participantes {
+				if id_part == id { // Verifica se o cliente é um participante do evento
+					eventos_participados[evento.id] = map[string]interface{}{
+						"ativo":    evento.ativo,
+						"nome":      evento.nome,
+						"descricao": evento.descricao,
+						"resultado": evento.resultado,
+					}
+				}
+			}
+		}
+
+		// Criação de estrutura para o retorno dos eventos relacionados ao cliente
+		eventos_cliente := map[string]interface{}{
+			"eventos_criados":      eventos_criados,
+			"eventos_participados": eventos_participados,
+		}
+
+		c.JSON(http.StatusOK, eventos_cliente) // Retorna os eventos relacionados ao cliente
+	})
 }
 
 // Função para definir os métodos POST do servidor
