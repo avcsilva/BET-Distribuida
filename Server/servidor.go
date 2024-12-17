@@ -80,6 +80,11 @@ type Cria_Evento_req struct {
 	PorcentagemCriador float64 `json:"porcentagemCriador"`
 }
 
+type Saldo_req struct {
+	Id    int     `json:"id"`
+	Saldo float64 `json:"saldo"`
+}
+
 // Fim das estruturas de dados
 
 // Funções para o Token Ring
@@ -762,7 +767,68 @@ func define_metodo_post(serv_local *Infos_local, serv *gin.Engine) {
 }
 
 // Função para definir os métodos PATCH do servidor
-func define_metodo_patch(serv_local *Infos_local, serv *gin.Engine) {}
+func define_metodo_patch(serv_local *Infos_local, serv *gin.Engine) {
+	// Método PATCH para alteração do saldo de um cliente
+	serv.PATCH("/alt_saldo", func(c *gin.Context) {
+		var alt_saldo Saldo_req  // Cria uma variável para armazenar a alteração do saldo
+		if err := c.ShouldBindJSON(&alt_saldo); err != nil {       // Faz o bind do JSON recebido para a variável de alteração do saldo
+			fmt.Println("Erro ao fazer o bind JSON (/alt_saldo):", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		fonte := c.GetHeader("X-Source") // Verifica o cabeçalho X-Source para saber se veio de um servidor ou cliente
+		if fonte == "servidor" {         // Caso seja de um servidor, realizar apenas a alteração própria do saldo do cliente
+			if !alterarSaldo(alt_saldo.Id, alt_saldo.Saldo, serv_local) { // Verifica se o cliente existe e altera o saldo
+				c.JSON(http.StatusNotFound, gin.H{"status": "não encontrado"})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{"status": "alterado"}) // Responde com o status de alterado
+		}
+
+		for !token { // Enquanto o servidor não possuir o token, ele aguardará
+			time.Sleep(10 * time.Millisecond) // Adiciona uma pausa de 10ms para evitar o uso de 100% da CPU
+		}
+
+		tarefa_ok = false // O servidor atual ainda não concluiu sua tarefa
+
+		if !alterarSaldo(alt_saldo.Id, alt_saldo.Saldo, serv_local) { // Verifica se o cliente existe e altera o saldo
+			c.JSON(http.StatusNotFound, gin.H{"status": "não encontrado"})
+			return
+		}
+
+		// Enviando alteração de saldo aos outros servidores
+		json_valor, err := json.Marshal(alt_saldo) // Serializa o JSON para enviar aos servidores
+		if err != nil {
+			fmt.Println("Erro ao serializar o JSON (/alt_saldo):", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			tarefa_ok = true // O servidor atual concluiu sua tarefa
+			return
+		}
+		for _, server := range serv_local.servidores { // Loop para acessar outros servidores
+			go func(server string) {
+				req, err := http.NewRequest("PATCH", server+"/alt_saldo", bytes.NewBuffer(json_valor)) // Cria uma requisição PATCH para o servidor
+				if err != nil {
+					fmt.Printf("Failed to create request to server %s: %v\n", server, err)
+					return
+				}
+				req.Header.Set("Content-Type", "application/json") // Adiciona o cabeçalho Content-Type para identificar que é um JSON
+				req.Header.Set("X-Source", "servidor")             // Adiciona o cabeçalho X-Source para identificar que é uma requisição de servidor
+
+				client := &http.Client{}    // Cria um cliente HTTP
+				resp, err := client.Do(req) // Envia a requisição
+				if err != nil {
+					fmt.Printf("Failed to send to server %s: %v\n", server, err)
+					return
+				}
+				defer resp.Body.Close()
+			}(server)
+		}
+
+		c.JSON(http.StatusOK, gin.H{"status": "alterado"}) // Responde com o status de alterado
+		tarefa_ok = true  // O servidor atual concluiu sua tarefa
+	})
+}
 
 // Função para definir o servidor com os métodos POST, GET e PATCH
 func define_servidor(serv_local *Infos_local) *gin.Engine {

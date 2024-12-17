@@ -42,6 +42,11 @@ type Cria_Evento_req struct {
 	PorcentagemCriador float64 `json:"porcentagemCriador"`
 }
 
+type Saldo_req struct {
+	Id    int     `json:"id"`
+	Saldo float64 `json:"saldo"`
+}
+
 // Função para limpar o terminal
 func limpar_terminal() {
 	var cmd *exec.Cmd
@@ -156,6 +161,33 @@ func criar_evento(nome string, descricao string, porcentagemCriador float64) boo
 	fmt.Println("Serializado: sucesso")
 
 	resposta, err := http.Post(url+"/cria_evento", "application/json", bytes.NewBuffer(json_valor)) // Faz a requisição POST
+	if err != nil {
+		fmt.Println("Erro ao fazer a requisição POST:", err)
+		return false
+	}
+	fmt.Println("POST: sucesso")
+	defer resposta.Body.Close()
+
+	var resposta_map map[string]interface{}                                      // Mapa para decodificar o JSON
+	if err := json.NewDecoder(resposta.Body).Decode(&resposta_map); err != nil { // Decodifica o JSON
+		fmt.Println("Erro ao decodificar o JSON:", err)
+		return false
+	}
+	fmt.Println("Decodificado: sucesso")
+
+	return true
+}
+
+func alterar_saldo(saldo float64) bool {
+	var alterar_saldo = Saldo_req{Id: id, Saldo: saldo}
+	json_valor, err := json.Marshal(alterar_saldo) // Serializa o JSON
+	if err != nil {
+		fmt.Println("Erro ao serializar o JSON:", err)
+		return false
+	}
+	fmt.Println("Serializado: sucesso")
+
+	resposta, err := http.Post(url+"/saldo", "application/json", bytes.NewBuffer(json_valor)) // Faz a requisição POST
 	if err != nil {
 		fmt.Println("Erro ao fazer a requisição POST:", err)
 		return false
