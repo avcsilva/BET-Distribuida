@@ -112,7 +112,7 @@ func cabecalho(endereco string) {
 		espacamento = strings.Repeat(" ", 33-tamanho)
 	}
 	fmt.Println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-")
-	fmt.Println("|\033[32m                 BET - Distribuida         	 \033[0m|")
+	fmt.Println("|\033[32m                 BET - Distribuida              	 \033[0m|")
 	fmt.Println("|--------------------------------------------------------|")
 	fmt.Println("|\033[34m            Conectado:", endereco+espacamento+"\033[0m|")
 	fmt.Print("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n\n")
@@ -187,12 +187,20 @@ func alterar_saldo(saldo float64) bool {
 	}
 	fmt.Println("Serializado: sucesso")
 
-	resposta, err := http.Post(url+"/saldo", "application/json", bytes.NewBuffer(json_valor)) // Faz a requisição POST
+	req, err := http.NewRequest(http.MethodPatch, url+"/alt_saldo", bytes.NewBuffer(json_valor)) // Cria uma requisição PATCH
 	if err != nil {
-		fmt.Println("Erro ao fazer a requisição POST:", err)
+		fmt.Println("Erro ao criar a requisição PATCH:", err)
 		return false
 	}
-	fmt.Println("POST: sucesso")
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resposta, err := client.Do(req) // Envia a requisição PATCH
+	if err != nil {
+		fmt.Println("Erro ao fazer a requisição PATCH:", err)
+		return false
+	}
+	fmt.Println("PATCH: sucesso")
 	defer resposta.Body.Close()
 
 	var resposta_map map[string]interface{}                                      // Mapa para decodificar o JSON
@@ -203,6 +211,36 @@ func alterar_saldo(saldo float64) bool {
 	fmt.Println("Decodificado: sucesso")
 
 	return true
+}
+
+func obter_saldo() (float64, error) {
+	resposta, err := http.Get(url + "/infos")
+	if err != nil {
+		return 0, err
+	}
+	defer resposta.Body.Close()
+
+	var resposta_map map[string]interface{}
+	if err := json.NewDecoder(resposta.Body).Decode(&resposta_map); err != nil {
+		return 0, err
+	}
+
+	clientes, ok := resposta_map["clientes"].(map[string]interface{})
+	if !ok {
+		return 0, fmt.Errorf("erro ao converter clientes")
+	}
+
+	cliente, ok := clientes[strconv.Itoa(id)].(map[string]interface{})
+	if !ok {
+		return 0, fmt.Errorf("erro ao converter cliente")
+	}
+
+	saldo, ok := cliente["saldo"].(float64)
+	if !ok {
+		return 0, fmt.Errorf("erro ao converter saldo")
+	}
+
+	return saldo, nil
 }
 
 func limpar_buffer() {
@@ -360,14 +398,95 @@ func main() {
 
 		} else if selecao == "6" { //Depositar
 			limpar_terminal()
-			//solicitar valor
-			//encaminhar para o servidor
-			//receber confirmação
+            reader := bufio.NewReader(os.Stdin)
+
+            saldoAtual, err := obter_saldo()
+            if err != nil {
+                fmt.Println("Erro ao obter o saldo atual:", err)
+                continue
+            }
+            fmt.Printf("Seu saldo atual é: %.2f\n", saldoAtual)
+
+            for {
+                fmt.Println("Digite o valor do depósito (ou digite '0' para encerrar): ")
+                saldoStr, _ := reader.ReadString('\n') // Lê a entrada do usuário
+                saldoStr = strings.TrimSpace(saldoStr) // Remove espaços extras e nova linha
+
+                // Verifica se o usuário deseja sair
+                if strings.ToLower(saldoStr) == "0" {
+                    break
+                }
+
+                // Converte a entrada para float64
+                saldo, err := strconv.ParseFloat(saldoStr, 64)
+                if err != nil {
+                    limpar_terminal()
+                    fmt.Println("Erro: valor inválido. Certifique-se de inserir um número válido.")
+                    continue // Volta ao início do loop
+                }
+
+                // Verifica se o valor é maior que 0
+                if saldo <= 0 {
+                    limpar_terminal()
+                    fmt.Println("Erro: valor inválido. O valor deve ser maior que 0.")
+                    continue // Volta ao início do loop
+                }
+
+                alterar_saldo(saldo)
+                limpar_terminal()
+				saldoAtual, err := obter_saldo()
+				if err != nil {
+					fmt.Println("Erro ao obter o saldo atual:", err)
+					continue
+				}
+                fmt.Printf("\033[32mO valor do saque é: %.2f\033[0m\n\033[34mSeu saldo atual é: %.2f\n\033[0m\n", saldo, saldoAtual)
+            }
+
 		} else if selecao == "7" { //Sacar
 			limpar_terminal()
-			//solicitar valor
-			//encaminhar para o servidor
-			//receber confirmação
+			reader := bufio.NewReader(os.Stdin)
+
+			saldoAtual, err := obter_saldo()
+			if err != nil {
+				fmt.Println("Erro ao obter o saldo atual:", err)
+				continue
+			}
+			fmt.Printf("Seu saldo atual é: %.2f\n", saldoAtual)
+
+			for {
+				fmt.Println("Digite o valor do saque (ou digite '0' para encerrar): ")
+				saldoStr, _ := reader.ReadString('\n') // Lê a entrada do usuário
+				saldoStr = strings.TrimSpace(saldoStr) // Remove espaços extras e nova linha
+
+				// Verifica se o usuário deseja sair
+				if strings.ToLower(saldoStr) == "0" {
+					break
+				}
+
+				// Converte a entrada para float64
+				saldo, err := strconv.ParseFloat(saldoStr, 64)
+				if err != nil {
+					limpar_terminal()
+					fmt.Println("Erro: valor inválido. Certifique-se de inserir um número válido.")
+					continue // Volta ao início do loop
+				}
+
+				// Verifica se o valor é maior que 0 e menor ou igual ao saldo atual
+				if saldo <= 0 || saldo > saldoAtual {
+					limpar_terminal()
+					fmt.Printf("Erro: valor inválido. O valor deve ser maior que 0 e menor ou igual ao saldo atual (%.2f).\n", saldoAtual)
+					continue // Volta ao início do loop
+				}
+
+				alterar_saldo(-saldo)
+				limpar_terminal()
+				saldoAtual, err := obter_saldo()
+				if err != nil {
+					fmt.Println("Erro ao obter o saldo atual:", err)
+					continue
+				}
+				fmt.Printf("\033[32mO valor do saque é: %.2f\033[0m\n\033[34mSeu saldo atual é: %.2f\n\033[0m\n", saldo, saldoAtual)
+			}
 		} else if selecao == "0" {
 			limpar_terminal()
 			displayMessageWithColors("Te vejo em breve :D", 3)
