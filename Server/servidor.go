@@ -85,6 +85,13 @@ type Saldo_req struct {
 	Saldo float64 `json:"saldo"`
 }
 
+type Participa_Evento_req struct {
+	Id_evento  int     `json:"id_evento"`
+	Id_cliente int     `json:"id_cliente"`
+	Palpite    string  `json:"palpite"`
+	Valor      float64 `json:"valor"`
+}
+
 // Fim das estruturas de dados
 
 // Funções para o Token Ring
@@ -824,6 +831,101 @@ func define_metodo_post(serv_local *Infos_local, serv *gin.Engine) {
 		c.JSON(http.StatusOK, gin.H{"status": "criado", "id": id_cont_evento}) // Responde com o status de criado e o ID do evento
 		id_cont_evento++                                                       // Incrementa o contador de ID
 		tarefa_ok = true                                                       // O servidor atual concluiu sua tarefa
+	})
+
+	// Método POST para participação de um cliente em um evento
+	serv.POST("/participa_evento", func(c *gin.Context) {
+		var participa_evento Participa_Evento_req                  // Cria uma variável para armazenar a participação do cliente no evento
+		if err := c.ShouldBindJSON(&participa_evento); err != nil { // Faz o bind do JSON recebido para a variável de participação do cliente no evento
+			fmt.Println("Erro ao fazer o bind JSON (/participa_evento):", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		fonte := c.GetHeader("X-Source") // Verifica o cabeçalho X-Source para saber se veio de um servidor ou cliente
+		if fonte == "servidor" {         // Caso seja de um servidor, realizar apenas a participação própria do cliente no evento
+			evento, ok := serv_local.eventos[participa_evento.Id_evento] // Verifica se o evento existe
+			if !ok {
+				c.JSON(http.StatusNotFound, gin.H{"status": "não encontrado"})
+				return
+			}
+
+			// Atualizando a lista de eventos participados pelo cliente
+			cliente := serv_local.clientes[participa_evento.Id_cliente]
+			cliente.id_eventos_participados = append(cliente.id_eventos_participados, participa_evento.Id_evento)
+			serv_local.clientes[participa_evento.Id_cliente] = cliente
+
+			// Atualizando a lista de participantes do evento
+			evento.participantes[participa_evento.Id_cliente] = participa_evento.Valor
+			serv_local.eventos[participa_evento.Id_evento] = evento
+
+			c.JSON(http.StatusOK, gin.H{"status": "participou"}) // Responde com o status de participou
+			return
+		}
+
+		for !token { // Enquanto o servidor não possuir o token, ele aguardará
+			time.Sleep(10 * time.Millisecond) // Adiciona uma pausa de 10ms para evitar o uso de 100% da CPU
+		}
+
+		tarefa_ok = false // O servidor atual ainda não concluiu sua tarefa
+
+		// Verificando se o cliente já está participando do evento
+		evento, ok := serv_local.eventos[participa_evento.Id_evento] // Verifica se o evento existe
+		if !ok {
+			c.JSON(http.StatusNotFound, gin.H{"status": "não encontrado"})
+			return
+		}
+		for id_part, _ := range evento.participantes {
+			if id_part == participa_evento.Id_cliente { // Caso o cliente já esteja participando do evento, responde com o ID do evento
+				c.JSON(http.StatusOK, gin.H{"status": "participou", "id": participa_evento.Id_evento}) // Responde com o ID do evento já participado
+				tarefa_ok = true                                                                           // O servidor atual concluiu sua tarefa
+				return
+			}
+		}
+
+		// Atualizando a lista de eventos participados pelo cliente
+		cliente := serv_local.clientes[participa_evento.Id_cliente]
+		cliente.id_eventos_participados = append(cliente.id_eventos_participados, participa_evento.Id_evento)
+		serv_local.clientes[participa_evento.Id_cliente] = cliente
+
+		// Atualizando a lista de participantes do evento
+		evento.participantes[participa_evento.Id_cliente] = participa_evento.Valor
+		serv_local.eventos[participa_evento.Id_evento] = evento
+
+		// Enviando participação de evento aos outros servidores
+		participa_evento = Participa_Evento_req{ // Monta a estrutuda de dados para enviar os servidores
+			Id_cliente:  participa_evento.Id_cliente,
+			Id_evento:   participa_evento.Id_evento,
+			Valor:       participa_evento.Valor,
+		}
+		json_valor, err := json.Marshal(participa_evento) // Serializa o JSON para enviar aos servidores
+		if err != nil {
+			fmt.Println("Erro ao serializar o JSON (/participa_evento):", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			tarefa_ok = true // O servidor atual concluiu sua tarefa
+			return
+		}
+		for _, server := range serv_local.servidores { // Loop para acessar outros servidores
+			go func(server string) {
+				req, err := http.NewRequest("POST", server+"/participa_evento", bytes.NewBuffer(json_valor)) // Cria uma requisição POST para o servidor
+				if err != nil {
+					fmt.Printf("Failed to create request to server %s: %v\n", server, err)
+					return
+				}
+				req.Header.Set("Content-Type", "application/json") // Adiciona o cabeçalho Content-Type para identificar que é um JSON
+				req.Header.Set("X-Source", "servidor")             // Adiciona o cabeçalho X-Source para identificar que é uma requisição de servidor
+
+				client := &http.Client{}    // Cria um cliente HTTP
+				resp, err := client.Do(req) // Envia a requisição
+				if err != nil {
+					fmt.Printf("Failed to send to server %s: %v\n", server, err)
+					return
+				}
+				defer resp.Body.Close()
+			}(server)
+		}
+		c.JSON(http.StatusOK, gin.H{"status": "participou"}) // Responde com o status de participou
+		tarefa_ok = true                                      // O servidor atual concluiu sua tarefa
 	})
 }
 

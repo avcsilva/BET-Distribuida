@@ -196,18 +196,8 @@ func criar_evento(nome string, descricao string, porcentagemCriador float64) boo
 	return true
 }
 
-func participarDoEvento(eventoID int, clienteID int, palpite string, valorAposta float64) bool {
-	var dados = struct {
-		EventoID    int     `json:"eventoID"`
-		ClienteID   int     `json:"clienteID"`
-		Palpite     string  `json:"palpite"`
-		ValorAposta float64 `json:"valorAposta"`
-	}{
-		EventoID:    eventoID,
-		ClienteID:   clienteID,
-		Palpite:     palpite,
-		ValorAposta: valorAposta,
-	}
+func participarDoEvento(eventoID int, palpite string, valorAposta float64) bool {
+	var dados = Participa_Evento_req{Id_evento: eventoID, Id_cliente: id, Palpite: palpite, Valor: valorAposta}
 
 	json_valor, err := json.Marshal(dados) // Serializa o JSON
 	if err != nil {
@@ -216,29 +206,24 @@ func participarDoEvento(eventoID int, clienteID int, palpite string, valorAposta
 	}
 	fmt.Println("Serializado: sucesso")
 
-	req, err := http.NewRequest(http.MethodPost, url+"/participar_evento", bytes.NewBuffer(json_valor)) // Cria uma requisição POST
+	resposta, err := http.Post(url+"/participa_evento", "application/json", bytes.NewBuffer(json_valor)) // Faz a requisição POST
 	if err != nil {
-		fmt.Println("Erro ao criar a requisição POST:", err)
+		fmt.Println("Erro ao fazer a requisição POST:", err)
 		return false
 	}
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resposta, err := client.Do(req) // Envia a requisição POST
-	if err != nil {
-		fmt.Println("Erro ao enviar a requisição:", err)
-		return false
-	}
+	fmt.Println("POST: sucesso")
 	defer resposta.Body.Close()
 
-	if resposta.StatusCode == http.StatusOK {
-		fmt.Println("Aposta realizada com sucesso!")
-		return true
-	} else {
-		fmt.Println("Erro ao realizar aposta. Status:", resposta.Status)
+	var resposta_map map[string]interface{}                                      // Mapa para decodificar o JSON
+	if err := json.NewDecoder(resposta.Body).Decode(&resposta_map); err != nil { // Decodifica o JSON
+		fmt.Println("Erro ao decodificar o JSON:", err)
 		return false
 	}
+	fmt.Println("Decodificado: sucesso")
+	
+	return true
 }
+
 func alterar_saldo(saldo float64) bool {
 	var alterar_saldo = Saldo_req{Id: id, Saldo: saldo}
 	json_valor, err := json.Marshal(alterar_saldo) // Serializa o JSON
@@ -464,7 +449,7 @@ func main() {
 					}
 					break
 				}
-				if participarDoEvento(eventoID, id, palpite, valorAposta) {
+				if participarDoEvento(eventoID, palpite, valorAposta) {
 					fmt.Println("Aposta realizada com sucesso!")
 				} else {
 					fmt.Println("Erro ao realizar aposta.")
