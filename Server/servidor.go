@@ -853,10 +853,12 @@ func define_metodo_post(serv_local *Infos_local, serv *gin.Engine) {
 			// Atualizando a lista de eventos participados pelo cliente
 			cliente := serv_local.clientes[participa_evento.Id_cliente]
 			cliente.id_eventos_participados = append(cliente.id_eventos_participados, participa_evento.Id_evento)
+			cliente.saldo -= participa_evento.Valor
 			serv_local.clientes[participa_evento.Id_cliente] = cliente
 
 			// Atualizando a lista de participantes do evento
 			evento.participantes[participa_evento.Id_cliente] = participa_evento.Valor
+			evento.palpite[participa_evento.Id_cliente] = participa_evento.Palpite
 			serv_local.eventos[participa_evento.Id_evento] = evento
 
 			c.JSON(http.StatusOK, gin.H{"status": "participou"}) // Responde com o status de participou
@@ -886,10 +888,12 @@ func define_metodo_post(serv_local *Infos_local, serv *gin.Engine) {
 		// Atualizando a lista de eventos participados pelo cliente
 		cliente := serv_local.clientes[participa_evento.Id_cliente]
 		cliente.id_eventos_participados = append(cliente.id_eventos_participados, participa_evento.Id_evento)
+		cliente.saldo -= participa_evento.Valor
 		serv_local.clientes[participa_evento.Id_cliente] = cliente
 
 		// Atualizando a lista de participantes do evento
 		evento.participantes[participa_evento.Id_cliente] = participa_evento.Valor
+		evento.palpite[participa_evento.Id_cliente] = participa_evento.Palpite
 		serv_local.eventos[participa_evento.Id_evento] = evento
 
 		// Enviando participação de evento aos outros servidores
