@@ -19,25 +19,25 @@ var url string //Ex.: "http://localhost:8080"
 
 // Estrutura de dados para o Evento ativo
 type Evento_ativo struct {
-	nome 			 string          // Nome do evento
-	descricao 		 string          // Descrição do evento
+	Nome      string `json:"nome"`      // Nome do evento
+	Descricao string `json:"descricao"` // Descrição do evento
 }
 
 // Estrutura de dados para o Evento criado
 type Evento_criado struct {
-	ativo              bool            // Status do evento (ativo ou inativo)
-	nome               string          // Nome do evento
-	descricao          string          // Descrição do evento
-	porcentagemCriador float64         // Porcentagem que o criador irá receber
-	resultado          string          // Resultado do evento
+	ativo              bool    // Status do evento (ativo ou inativo)
+	nome               string  // Nome do evento
+	descricao          string  // Descrição do evento
+	porcentagemCriador float64 // Porcentagem que o criador irá receber
+	resultado          string  // Resultado do evento
 }
 
 // Estrutura de dados para o Evento participado
 type Evento_participado struct {
-	ativo              bool            // Status do evento (ativo ou inativo)
-	nome               string          // Nome do evento
-	descricao          string          // Descrição do evento
-	resultado          string          // Resultado do evento
+	ativo     bool   // Status do evento (ativo ou inativo)
+	nome      string // Nome do evento
+	descricao string // Descrição do evento
+	resultado string // Resultado do evento
 }
 
 type Cadastro_req struct {
@@ -56,6 +56,13 @@ type Cria_Evento_req struct {
 type Saldo_req struct {
 	Id    int     `json:"id"`
 	Saldo float64 `json:"saldo"`
+}
+
+type Participa_Evento_req struct {
+	Id_evento  int     `json:"id_evento"`
+	Id_cliente int     `json:"id_cliente"`
+	Palpite    string  `json:"palpite"`
+	Valor      float64 `json:"valor"`
 }
 
 // Função para limpar o terminal
@@ -285,24 +292,7 @@ func eventos_cliente() map[string]interface{} {
 		return nil
 	}
 
-	eventos_criados, ok := eventos_cliente_interface["eventos_criados"].(Evento_criado)
-	if !ok {
-		fmt.Println("Erro ao converter eventos criados")
-		return nil
-	}
-
-	eventos_participados, ok := eventos_cliente_interface["eventos_participados"].(Evento_participado)
-	if !ok {
-		fmt.Println("Erro ao converter eventos participados")
-		return nil
-	}
-
-	eventos_cliente := map[string]interface{}{
-		"eventos_criados":     eventos_criados,
-		"eventos_participados": eventos_participados,
-	}
-
-	return eventos_cliente
+	return eventos_cliente_interface
 }
 
 func limpar_buffer() {
@@ -375,14 +365,19 @@ func main() {
 
 		if selecao == "1" { //Participar de um evento
 			limpar_terminal()
-			//ver lista com os nomes do evento
-			//sugestao 1 - colocar o id do evento do lado e o usuario digita
-			//sugestao 2 - o usario digita o nome igual as rotas
-			//segestao 3 - ambos (AI COMPLICA)
-			//aparece os detalhes do evento, nome, descricao e criado
-			//opcoes voltar, participar
-			//em participar - cobra o pagameto
-			//opcoes voltar e confirmar
+			eventos := eventos_ativos()
+			if len(eventos) == 0 {
+				fmt.Println("Não há eventos ativos no momento.")
+			} else {
+				fmt.Println("Eventos ativos:")
+				fmt.Println("--------------------------------------------------")
+				for id, evento := range eventos {
+					fmt.Printf("ID: %d \nNome: %s \nDescrição: %s\n", id, evento.Nome, evento.Descricao)
+					fmt.Println("--------------------------------------------------")
+				}
+			}
+			fmt.Println("Pressione Enter para voltar ao menu.")
+			reader.ReadString('\n')
 		} else if selecao == "2" { //Criar um envento
 			limpar_terminal()
 
@@ -415,19 +410,55 @@ func main() {
 
 		} else if selecao == "3" { //Ver evetos [Participados]
 			limpar_terminal()
-			//exibir lista de envento que o usuario participa ou participou
-			//sugestao 1 - colocar o id do evento do lado e o usuario digita
-			//sugestao 2 - o usario digita o nome igual as rotas
-			//segestao 3 - ambos (AI COMPLICA)
-			//aparece os voltar e detalhe (RPZ TEM QUE INFORMAR O GANHADOR) (REEBOLSO NÃO É UMA OPCAO, JOGOU PQ QUIS)
+			eventos := eventos_cliente()
+			eventos_participados, ok := eventos["eventos_participados"].(map[string]interface{})
+			if !ok || len(eventos_participados) == 0 {
+				fmt.Println("Você não participou de nenhum evento.")
+			} else {
+				fmt.Println("Eventos participados:")
+				fmt.Println("--------------------------------------------------")
+				for id, evento := range eventos_participados {
+					evento_map := evento.(map[string]interface{})
+					status := "inativo"
+					if evento_map["ativo"].(bool) {
+						status = "ativo"
+					}
+					resposta := evento_map["resultado"].(string)
+					if resposta == "" {
+						resposta = "Sem resposta"
+					}
+					fmt.Printf("ID: %s \nNome: %s \nDescrição: %s \nStatus: %s \nResposta: %s\n", id, evento_map["nome"], evento_map["descricao"], status, resposta)
+					fmt.Println("--------------------------------------------------")
+				}
+			}
+			fmt.Println("Pressione Enter para voltar ao menu.")
+			reader.ReadString('\n')
 		} else if selecao == "4" { //Ver evetos [Criados]
 			limpar_terminal()
-			//opcao ativo e desativado
-			//sugestao 1 - colocar o id do evento do lado e o usuario digita
-			//sugestao 2 - o usario digita o nome igual as rotas
-			//segestao 3 - ambos (AI COMPLICA)
-			//desativado - opcoes volta e detalhe (NAO PODE EDITAR NADA)
-			//ativo - opcoes voltar, informar vencedor (isso poes como evento finalizado) (NADA MAIS PODE SER ALTERADO)
+			eventos := eventos_cliente()
+			eventos_criados, ok := eventos["eventos_criados"].(map[string]interface{})
+			if !ok || len(eventos_criados) == 0 {
+				fmt.Println("Você não criou nenhum evento.")
+			} else {
+				fmt.Println("Eventos criados:")
+				fmt.Println("--------------------------------------------------")
+				for id, evento := range eventos_criados {
+					evento_map := evento.(map[string]interface{})
+					status := "inativo"
+					if evento_map["ativo"].(bool) {
+						status = "ativo"
+					}
+					resposta := evento_map["resultado"].(string)
+					if resposta == "" {
+						resposta = "Sem resposta"
+					}
+					porcentagemCriador := evento_map["porcentagemCriador"].(float64)
+					fmt.Printf("ID: %s \nNome: %s \nDescrição: %s \nStatus: %s \nResposta: %s \nPorcentagem do Criador: %.1f%%\n", id, evento_map["nome"], evento_map["descricao"], status, resposta, porcentagemCriador)
+					fmt.Println("--------------------------------------------------")
+				}
+			}
+			fmt.Println("Pressione Enter para voltar ao menu.")
+			reader.ReadString('\n')
 
 		} else if selecao == "5" { //Enviar resultado de um evento
 			limpar_terminal()
@@ -445,49 +476,49 @@ func main() {
 
 		} else if selecao == "6" { //Depositar
 			limpar_terminal()
-            reader := bufio.NewReader(os.Stdin)
+			reader := bufio.NewReader(os.Stdin)
 
-            saldoAtual, err := obter_saldo()
-            if err != nil {
-                fmt.Println("Erro ao obter o saldo atual:", err)
-                continue
-            }
-            fmt.Printf("Seu saldo atual é: %.2f\n", saldoAtual)
+			saldoAtual, err := obter_saldo()
+			if err != nil {
+				fmt.Println("Erro ao obter o saldo atual:", err)
+				continue
+			}
+			fmt.Printf("Seu saldo atual é: %.2f\n", saldoAtual)
 
-            for {
-                fmt.Println("Digite o valor do depósito (ou digite '0' para encerrar): ")
-                saldoStr, _ := reader.ReadString('\n') // Lê a entrada do usuário
-                saldoStr = strings.TrimSpace(saldoStr) // Remove espaços extras e nova linha
+			for {
+				fmt.Println("Digite o valor do depósito (ou digite '0' para encerrar): ")
+				saldoStr, _ := reader.ReadString('\n') // Lê a entrada do usuário
+				saldoStr = strings.TrimSpace(saldoStr) // Remove espaços extras e nova linha
 
-                // Verifica se o usuário deseja sair
-                if strings.ToLower(saldoStr) == "0" {
-                    break
-                }
+				// Verifica se o usuário deseja sair
+				if strings.ToLower(saldoStr) == "0" {
+					break
+				}
 
-                // Converte a entrada para float64
-                saldo, err := strconv.ParseFloat(saldoStr, 64)
-                if err != nil {
-                    limpar_terminal()
-                    fmt.Println("Erro: valor inválido. Certifique-se de inserir um número válido.")
-                    continue // Volta ao início do loop
-                }
+				// Converte a entrada para float64
+				saldo, err := strconv.ParseFloat(saldoStr, 64)
+				if err != nil {
+					limpar_terminal()
+					fmt.Println("Erro: valor inválido. Certifique-se de inserir um número válido.")
+					continue // Volta ao início do loop
+				}
 
-                // Verifica se o valor é maior que 0
-                if saldo <= 0 {
-                    limpar_terminal()
-                    fmt.Println("Erro: valor inválido. O valor deve ser maior que 0.")
-                    continue // Volta ao início do loop
-                }
+				// Verifica se o valor é maior que 0
+				if saldo <= 0 {
+					limpar_terminal()
+					fmt.Println("Erro: valor inválido. O valor deve ser maior que 0.")
+					continue // Volta ao início do loop
+				}
 
-                alterar_saldo(saldo)
-                limpar_terminal()
+				alterar_saldo(saldo)
+				limpar_terminal()
 				saldoAtual, err := obter_saldo()
 				if err != nil {
 					fmt.Println("Erro ao obter o saldo atual:", err)
 					continue
 				}
-                fmt.Printf("\033[32mO valor do saque é: %.2f\033[0m\n\033[34mSeu saldo atual é: %.2f\n\033[0m\n", saldo, saldoAtual)
-            }
+				fmt.Printf("\033[32mO valor do saque é: %.2f\033[0m\n\033[34mSeu saldo atual é: %.2f\n\033[0m\n", saldo, saldoAtual)
+			}
 
 		} else if selecao == "7" { //Sacar
 			limpar_terminal()
