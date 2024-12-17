@@ -65,6 +65,12 @@ type Participa_Evento_req struct {
 	Valor      float64 `json:"valor"`
 }
 
+type Altera_Resultado_req struct {
+	Id_evento int    `json:"id_evento"`
+	Id_cliente int    `json:"id_cliente"`
+	Resultado string `json:"resultado"`
+}
+
 // Função para limpar o terminal
 func limpar_terminal() {
 	var cmd *exec.Cmd
@@ -314,6 +320,42 @@ func eventos_cliente() map[string]interface{} {
 	return eventos_cliente_interface
 }
 
+func alterarResultado(eventoID int, resultado string) bool {
+	var dados = Altera_Resultado_req{Id_evento: eventoID, Id_cliente: id, Resultado: resultado}
+
+	json_valor, err := json.Marshal(dados) // Serializa o JSON
+	if err != nil {
+		fmt.Println("Erro ao serializar o JSON:", err)
+		return false
+	}
+	fmt.Println("Serializado: sucesso")
+
+	req, err := http.NewRequest(http.MethodPatch, url+"/altera_resultado", bytes.NewBuffer(json_valor)) // Cria uma requisição PATCH
+	if err != nil {
+		fmt.Println("Erro ao criar a requisição PATCH:", err)
+		return false
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resposta, err := client.Do(req) // Envia a requisição PATCH
+	if err != nil {
+		fmt.Println("Erro ao fazer a requisição PATCH:", err)
+		return false
+	}
+	fmt.Println("PATCH: sucesso")
+	defer resposta.Body.Close()
+
+	var resposta_map map[string]interface{}                                      // Mapa para decodificar o JSON
+	if err := json.NewDecoder(resposta.Body).Decode(&resposta_map); err != nil { // Decodifica o JSON
+		fmt.Println("Erro ao decodificar o JSON:", err)
+		return false
+	}
+	fmt.Println("Decodificado: sucesso")
+
+	return true
+}
+
 func limpar_buffer() {
 	// Limpa o buffer pendente
 	reader := bufio.NewReader(os.Stdin)
@@ -535,14 +577,19 @@ func main() {
 			// ver eventos ativos()
 			// Seleção do evento
 			fmt.Println("Escolha qual evento deseja informar o resultado: ")
-			eventoID, _ := reader.ReadString('\n')
-			eventoID = strings.TrimSpace(eventoID)
+			input, _ := reader.ReadString('\n')
+			input = strings.TrimSpace(input)
+			eventoID, err := strconv.Atoi(input)
+			if err != nil {
+				fmt.Println("ID do evento inválido. Tente novamente.")
+				continue
+			}
 
 			// Resultado do evento
 			fmt.Println("Digite o resultado do evento (Isso Encerrar o evento automaticamente): ")
 			resultado, _ := reader.ReadString('\n')
 			resultado = strings.TrimSpace(resultado)
-			//alterarResultado(eventoID, resultado)
+			alterarResultado(eventoID, resultado)
 
 		} else if selecao == "6" { //Depositar
 			limpar_terminal()

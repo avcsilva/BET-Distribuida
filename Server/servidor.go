@@ -92,6 +92,12 @@ type Participa_Evento_req struct {
 	Valor      float64 `json:"valor"`
 }
 
+type Altera_Resultado_req struct {
+	Id_evento int    `json:"id_evento"`
+	Id_cliente int    `json:"id_cliente"`
+	Resultado string `json:"resultado"`
+}
+
 // Fim das estruturas de dados
 
 // Funções para o Token Ring
@@ -634,7 +640,7 @@ func define_metodo_get(serv_local *Infos_local, serv *gin.Engine) {
 				}
 				continue // Se o cliente é o criador, não é necessário verificar se ele é um participante
 			}
-			for id_part, _ := range evento.participantes {
+			for id_part := range evento.participantes {
 				if id_part == id { // Verifica se o cliente é um participante do evento
 					eventos_participados[evento.id] = map[string]interface{}{
 						"ativo":    evento.ativo,
@@ -899,7 +905,7 @@ func define_metodo_post(serv_local *Infos_local, serv *gin.Engine) {
 			c.JSON(http.StatusNotFound, gin.H{"status": "não encontrado"})
 			return
 		}
-		for id_part, _ := range evento.participantes {
+		for id_part := range evento.participantes {
 			if id_part == participa_evento.Id_cliente { // Caso o cliente já esteja participando do evento, responde com o ID do evento
 				c.JSON(http.StatusOK, gin.H{"status": "participou", "id": participa_evento.Id_evento}) // Responde com o ID do evento já participado
 				tarefa_ok = true                                                                           // O servidor atual concluiu sua tarefa
@@ -1017,6 +1023,67 @@ func define_metodo_patch(serv_local *Infos_local, serv *gin.Engine) {
 		c.JSON(http.StatusOK, gin.H{"status": "alterado"}) // Responde com o status de alterado
 		tarefa_ok = true  // O servidor atual concluiu sua tarefa
 	})
+
+	// Método PATCH para alteração do resultado de um evento
+	serv.PATCH("/altera_resultado", func(c *gin.Context) {
+		var alt_resultado Altera_Resultado_req                          // Cria uma variável para armazenar a alteração do resultado
+		if err := c.ShouldBindJSON(&alt_resultado); err != nil { // Faz o bind do JSON recebido para a variável de alteração do resultado
+			fmt.Println("Erro ao fazer o bind JSON (/altera_resultado):", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		fonte := c.GetHeader("X-Source") // Verifica o cabeçalho X-Source para saber se veio de um servidor ou cliente
+		if fonte == "servidor" {         // Caso seja de um servidor, realizar apenas a alteração própria do resultado do evento
+			if !resultadoEvento(alt_resultado.Id_evento, alt_resultado.Id_cliente, alt_resultado.Resultado, serv_local) { // Verifica se o evento existe e altera o resultado
+				c.JSON(http.StatusNotFound, gin.H{"status": "não encontrado"})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{"status": "alterado"}) // Responde com o status de alterado
+		}
+
+		for !token { // Enquanto o servidor não possuir o token, ele aguardará
+			time.Sleep(10 * time.Millisecond) // Adiciona uma pausa de 10ms para evitar o uso de 100% da CPU
+		}
+
+		tarefa_ok = false // O servidor atual ainda não concluiu sua tarefa
+
+		if !resultadoEvento(alt_resultado.Id_evento, alt_resultado.Id_cliente, alt_resultado.Resultado, serv_local) { // Verifica se o evento existe e altera o resultado
+			c.JSON(http.StatusNotFound, gin.H{"status": "não encontrado"})
+			return
+		}
+
+		// Enviando alteração de resultado aos outros servidores
+		json_valor, err := json.Marshal(alt_resultado) // Serializa o JSON para enviar aos servidores
+		if err != nil {
+			fmt.Println("Erro ao serializar o JSON (/altera_resultado):", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			tarefa_ok = true // O servidor atual concluiu sua tarefa
+			return
+		}
+		for _, server := range serv_local.servidores { // Loop para acessar outros servidores
+			go func(server string) {
+				req, err := http.NewRequest("PATCH", server+"/altera_resultado", bytes.NewBuffer(json_valor)) // Cria uma requisição PATCH para o servidor
+				if err != nil {
+					fmt.Printf("Failed to create request to server %s: %v\n", server, err)
+					return
+				}
+				req.Header.Set("Content-Type", "application/json") // Adiciona o cabeçalho Content-Type para identificar que é um JSON
+				req.Header.Set("X-Source", "servidor")             // Adiciona o cabeçalho X-Source para identificar que é uma requisição de servidor
+
+				client := &http.Client{}    // Cria um cliente HTTP
+				resp, err := client.Do(req) // Envia a requisição
+				if err != nil {
+					fmt.Printf("Failed to send to server %s: %v\n", server, err)
+					return
+				}
+				defer resp.Body.Close()
+			}(server)
+		}
+
+		c.JSON(http.StatusOK, gin.H{"status": "alterado"}) // Responde com o status de alterado
+		tarefa_ok = true  // O servidor atual concluiu sua tarefa
+	})
 }
 
 // Função para definir o servidor com os métodos POST, GET e PATCH
@@ -1090,16 +1157,21 @@ func calcularPremio(e Evento, serv_local *Infos_local) {
 	}
 }
 
-func resultadoEvento(id int, resultado string, il *Infos_local) bool {
+func resultadoEvento(id_evento int, id_cliente int, resultado string, il *Infos_local) bool {
 	// Verificar se o evento existe no mapa
-	evento, encontrado := il.eventos[id]
+	evento, encontrado := il.eventos[id_evento]
 	if !encontrado {
 		return false // Retorna falso se o evento não for encontrado
 	}
 
+	// Verificar se o cliente é o criador do evento
+	if id_cliente != evento.id_criador {
+		return false // Retorna falso se o cliente não for o criador do evento
+	}
+
 	// Atualizar o resultado do evento diretamente no mapa
 	evento.resultado = resultado
-	il.eventos[id] = evento // Reatribuir o evento ao mapa
+	il.eventos[id_evento] = evento // Reatribuir o evento ao mapa
 
 	calcularPremio(evento, il) // Calcula o prêmio e atribui aos ganhadores
 	return true
