@@ -4,8 +4,8 @@ FROM golang:1.23.1
 # Defina o diretório de trabalho dentro do contêiner
 WORKDIR /app
 
-# Copie o arquivo go.mod e go.sum, se existirem
-COPY go.mod go.sum ./
+# Copie os arquivos go.mod e go.sum do diretório raiz
+COPY ../go.mod ../go.sum ./
 
 # Baixe as dependências
 RUN go mod download
