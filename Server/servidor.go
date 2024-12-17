@@ -498,7 +498,7 @@ func define_info() Infos_local {
 				}
 				return serv_local
 			} else if qual_serv == "B" {
-				servidores := []string{serv_lab_A, serv_lab_C}
+				servidores := []string{serv_lab_C, serv_lab_A}
 				serv_local := Infos_local{
 					servidores: servidores,
 					porta:      ":8080",
