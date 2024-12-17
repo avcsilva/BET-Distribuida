@@ -572,6 +572,28 @@ func define_metodo_get(serv_local *Infos_local, serv *gin.Engine) {
 		c.JSON(http.StatusOK, infos) // Retorna as informações armazenadas pelo servidor
 	})
 
+	// Método GET para retornar dados de um cliente
+	serv.GET("/cliente", func(c *gin.Context) {
+		cliente_id := c.Query("id") // Obtém o ID do cliente
+		id, erro := strconv.Atoi(cliente_id)
+		if erro != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido."})
+			return
+		}
+
+		if cliente, ok := serv_local.clientes[id]; ok { // Verifica se o cliente existe
+			cliente_info := map[string]interface{}{
+				"nome":                    cliente.nome,
+				"saldo":                   cliente.saldo,
+				"id_eventos_criados":      cliente.id_eventos_criados,
+				"id_eventos_participados": cliente.id_eventos_participados,
+			}
+			c.JSON(http.StatusOK, cliente_info) // Retorna os dados do cliente
+		} else {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Cliente não encontrado."})
+		}
+	})
+
 	// Método GET para retornar eventos ativos
 	serv.GET("/eventos_ativos", func(c *gin.Context) {
 		// Criação de estrutura para armazenar os eventos ativos
