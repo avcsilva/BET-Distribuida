@@ -17,7 +17,7 @@ COPY Server/servidor.go .
 RUN go build -o servidor servidor.go
 
 # Exponha a porta que o servidor irá usar
-EXPOSE 8088
+EXPOSE 8080
 
 # Comando para executar o aplicativo
 CMD ["./servidor"]
