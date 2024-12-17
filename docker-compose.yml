@@ -9,6 +9,8 @@ services:
       - "8080:8080"
     networks:
       - bet-network
+    stdin_open: true
+    tty: true
 
   cliente:
     build:
@@ -18,6 +20,8 @@ services:
       - servidor
     networks:
       - bet-network
+    stdin_open: true
+    tty: true
 
 networks:
   bet-network:
