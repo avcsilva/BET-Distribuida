@@ -5,16 +5,19 @@ FROM golang:1.23.1
 WORKDIR /app
 
 # Copie os arquivos go.mod e go.sum do diretório raiz
-COPY ../go.mod ../go.sum ./
+COPY go.mod go.sum ./
 
 # Baixe as dependências
 RUN go mod download
 
-# Copie o arquivo cliente.go para o diretório de trabalho
-COPY cliente.go .
+# Copie o arquivo servidor.go para o diretório de trabalho
+COPY Server/servidor.go .
 
 # Compile o aplicativo Go
-RUN go build -o cliente cliente.go
+RUN go build -o servidor servidor.go
+
+# Exponha a porta que o servidor irá usar
+EXPOSE 8080
 
 # Comando para executar o aplicativo
-CMD ["./cliente"]
+CMD ["./servidor"]

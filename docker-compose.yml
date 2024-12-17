@@ -3,8 +3,8 @@ version: "3.8"
 services:
   servidor:
     build:
-      context: ./Server
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.servidor
     ports:
       - "8080:8080"
     networks:
@@ -12,8 +12,8 @@ services:
 
   cliente:
     build:
-      context: ./Client
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.cliente
     depends_on:
       - servidor
     networks:
