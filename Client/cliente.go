@@ -260,32 +260,23 @@ func alterar_saldo(saldo float64) bool {
 }
 
 func obter_saldo() (float64, error) {
-	resposta, err := http.Get(url + "/infos")
+	resposta, err := http.Get(url + fmt.Sprintf("/cliente?id=%d", id)) // Faz a requisição GET com parâmetro de id
 	if err != nil {
+		fmt.Println("Erro ao fazer a requisição GET:", err)
 		return 0, err
 	}
 	defer resposta.Body.Close()
 
 	var resposta_map map[string]interface{}
 	if err := json.NewDecoder(resposta.Body).Decode(&resposta_map); err != nil {
+		fmt.Println("Erro ao decodificar o JSON:", err)
 		return 0, err
 	}
 
-	clientes, ok := resposta_map["clientes"].(map[string]interface{})
+	saldo, ok := resposta_map["saldo"].(float64)
 	if !ok {
-		return 0, fmt.Errorf("erro ao converter clientes")
+		return 0, fmt.Errorf("erro ao converter o saldo")
 	}
-
-	cliente, ok := clientes[strconv.Itoa(id)].(map[string]interface{})
-	if !ok {
-		return 0, fmt.Errorf("erro ao converter cliente")
-	}
-
-	saldo, ok := cliente["saldo"].(float64)
-	if !ok {
-		return 0, fmt.Errorf("erro ao converter saldo")
-	}
-
 	return saldo, nil
 }
 
