@@ -1027,33 +1027,24 @@ func define_metodo_patch(serv_local *Infos_local, serv *gin.Engine) {
 
 	// Método PATCH para alteração do resultado de um evento
 	serv.PATCH("/altera_resultado", func(c *gin.Context) {
-		var alt_resultado Altera_Resultado_req                          // Cria uma variável para armazenar a alteração do resultado
-		if err := c.ShouldBindJSON(&alt_resultado); err != nil { // Faz o bind do JSON recebido para a variável de alteração do resultado
-			fmt.Println("Erro ao fazer o bind JSON (/altera_resultado):", err)
+		var alt_resultado Altera_Resultado_req
+		if err := c.ShouldBindJSON(&alt_resultado); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-
-		fonte := c.GetHeader("X-Source") // Verifica o cabeçalho X-Source para saber se veio de um servidor ou cliente
-		if fonte == "servidor" {         // Caso seja de um servidor, realizar apenas a alteração própria do resultado do evento
-			if !resultadoEvento(alt_resultado.Id_evento, alt_resultado.Id_cliente, alt_resultado.Resultado, serv_local) { // Verifica se o evento existe e altera o resultado
-				c.JSON(http.StatusNotFound, gin.H{"status": "não encontrado"})
-				return
-			}
-			c.JSON(http.StatusOK, gin.H{"status": "alterado"}) // Responde com o status de alterado
-		}
-
-		for !token { // Enquanto o servidor não possuir o token, ele aguardará
-			time.Sleep(10 * time.Millisecond) // Adiciona uma pausa de 10ms para evitar o uso de 100% da CPU
-		}
-
+	
 		tarefa_ok = false // O servidor atual ainda não concluiu sua tarefa
-
+	
 		if !resultadoEvento(alt_resultado.Id_evento, alt_resultado.Id_cliente, alt_resultado.Resultado, serv_local) { // Verifica se o evento existe e altera o resultado
 			c.JSON(http.StatusNotFound, gin.H{"status": "não encontrado"})
 			return
 		}
-
+	
+		// Atualizando o evento para inativo
+		evento := serv_local.eventos[alt_resultado.Id_evento]
+		evento.ativo = false
+		serv_local.eventos[alt_resultado.Id_evento] = evento
+	
 		// Enviando alteração de resultado aos outros servidores
 		json_valor, err := json.Marshal(alt_resultado) // Serializa o JSON para enviar aos servidores
 		if err != nil {
@@ -1062,6 +1053,7 @@ func define_metodo_patch(serv_local *Infos_local, serv *gin.Engine) {
 			tarefa_ok = true // O servidor atual concluiu sua tarefa
 			return
 		}
+	
 		for _, server := range serv_local.servidores { // Loop para acessar outros servidores
 			go func(server string) {
 				req, err := http.NewRequest("PATCH", server+"/altera_resultado", bytes.NewBuffer(json_valor)) // Cria uma requisição PATCH para o servidor
@@ -1071,7 +1063,7 @@ func define_metodo_patch(serv_local *Infos_local, serv *gin.Engine) {
 				}
 				req.Header.Set("Content-Type", "application/json") // Adiciona o cabeçalho Content-Type para identificar que é um JSON
 				req.Header.Set("X-Source", "servidor")             // Adiciona o cabeçalho X-Source para identificar que é uma requisição de servidor
-
+	
 				client := &http.Client{}    // Cria um cliente HTTP
 				resp, err := client.Do(req) // Envia a requisição
 				if err != nil {
@@ -1081,9 +1073,10 @@ func define_metodo_patch(serv_local *Infos_local, serv *gin.Engine) {
 				defer resp.Body.Close()
 			}(server)
 		}
-
+	
 		c.JSON(http.StatusOK, gin.H{"status": "alterado"}) // Responde com o status de alterado
 		tarefa_ok = true  // O servidor atual concluiu sua tarefa
+    
 	})
 }
 
@@ -1127,55 +1120,69 @@ func alterarSaldo(id int, novoSaldo float64, il *Infos_local) bool {
 
 // tratameto de dados
 func calcularPremio(e Evento, serv_local *Infos_local) {
-	premiacao := 0.0                    //Variável para armazenar o valor total das apostas
-	total_ganhadores := 0.0             //Variável para armazenar o total apostado pelos ganhadores
-	ganhadores := make(map[int]float64) // Mapa para armazenar os ganhadores e seus valores de aposta
+    premiacao := 0.0                    // Variável para armazenar o valor total das apostas
+    total_ganhadores := 0.0             // Variável para armazenar o total apostado pelos ganhadores
+    ganhadores := make(map[int]float64) // Mapa para armazenar os ganhadores e seus valores de aposta
 
-	// calcula o valor total
-	for _, valor := range e.participantes {
-		premiacao += valor
-	}
+    // Calcula o valor total das apostas
+    for _, valor := range e.participantes {
+        premiacao += valor
+    }
+    fmt.Printf("Valor total das apostas: %.2f\n", premiacao)
 
-	// Calcula o valor do ganho do criador
-	ganhoCriador := (e.porcentagemCriador / 100) * premiacao
-	alterarSaldo(e.id_criador, ganhoCriador, serv_local) // Passa o id do criador, o valor do ganho e a estrutura de dados
-	premiacao -= ganhoCriador
+    // Calcula o valor do ganho do criador
+    ganhoCriador := (e.porcentagemCriador / 100) * premiacao
+    fmt.Printf("Ganho do criador (%.2f%%): %.2f\n", e.porcentagemCriador, ganhoCriador)
+    alterarSaldo(e.id_criador, ganhoCriador, serv_local) // Passa o id do criador, o valor do ganho e a estrutura de dados
+    premiacao -= ganhoCriador
+    fmt.Printf("Premiação restante após ganho do criador: %.2f\n", premiacao)
 
-	for ip, palpt := range e.palpite {
-		if palpt == e.resultado {
-			ganhadores[ip] = e.participantes[ip]
-		}
-	}
-	// Calcula o total apostado pelos ganhadores
-	for _, valor := range ganhadores {
-		total_ganhadores += valor
-	}
-	//pagamento
-	for id := range ganhadores {
-		ganho := (e.participantes[id] / total_ganhadores) * premiacao
-		//atribuir ganho ao saldo do Cliente
-		alterarSaldo(id, ganho, serv_local) // Passa o id do ganhador, o valor do ganho e a estrutura de dados
-	}
+    // Identifica os ganhadores
+    for id, palpite := range e.palpite {
+        if palpite == e.resultado {
+            ganhadores[id] = e.participantes[id]
+        }
+    }
+    fmt.Printf("Ganhadores identificados: %v\n", ganhadores)
+
+    // Calcula o total apostado pelos ganhadores
+    for _, valor := range ganhadores {
+        total_ganhadores += valor
+    }
+    fmt.Printf("Total apostado pelos ganhadores: %.2f\n", total_ganhadores)
+
+    // Pagamento aos ganhadores
+    for id := range ganhadores {
+        ganho := (e.participantes[id] / total_ganhadores) * premiacao
+        fmt.Printf("Ganho do participante %d: %.2f\n", id, ganho)
+        alterarSaldo(id, ganho, serv_local) // Passa o id do ganhador, o valor do ganho e a estrutura de dados
+    }
 }
 
 func resultadoEvento(id_evento int, id_cliente int, resultado string, il *Infos_local) bool {
-	// Verificar se o evento existe no mapa
-	evento, encontrado := il.eventos[id_evento]
-	if !encontrado {
-		return false // Retorna falso se o evento não for encontrado
-	}
+    // Verificar se o evento existe no mapa
+    evento, encontrado := il.eventos[id_evento]
+    if !encontrado {
+        return false // Retorna falso se o evento não for encontrado
+    }
 
-	// Verificar se o cliente é o criador do evento
-	if id_cliente != evento.id_criador {
-		return false // Retorna falso se o cliente não for o criador do evento
-	}
+    // Verificar se o evento já está inativo
+    if !evento.ativo {
+        return false // Retorna falso se o evento já estiver inativo
+    }
 
-	// Atualizar o resultado do evento diretamente no mapa
-	evento.resultado = resultado
-	il.eventos[id_evento] = evento // Reatribuir o evento ao mapa
+    // Verificar se o cliente é o criador do evento
+    if id_cliente != evento.id_criador {
+        return false // Retorna falso se o cliente não for o criador do evento
+    }
 
-	calcularPremio(evento, il) // Calcula o prêmio e atribui aos ganhadores
-	return true
+    // Atualizar o resultado do evento diretamente no mapa
+    evento.resultado = resultado
+    evento.ativo = false // Marcar o evento como inativo
+    il.eventos[id_evento] = evento // Reatribuir o evento ao mapa
+
+    calcularPremio(evento, il) // Calcula o prêmio e atribui aos ganhadores
+    return true
 }
 
 func main() {
